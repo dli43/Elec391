@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
 # === Serial Config ===
-ser = serial.Serial('COM3', baudrate=9600, timeout=1)
+ser = serial.Serial('COM3', baudrate=57600, timeout=1)
+ser.reset_input_buffer()
 time.sleep(2)  # Allow Arduino time to reset
 
 x_vals, y_vals, z_vals = [], [], []
@@ -26,6 +27,7 @@ def update(frame):
     data = get_accel_data()
     if data:    
         x, y, z = data
+        # print(x,y,z)
         x_vals.append(x)
         y_vals.append(y)
         z_vals.append(z)
@@ -46,5 +48,5 @@ def update(frame):
         plt.legend(loc='upper right')
         plt.tight_layout()
 
-ani = FuncAnimation(plt.gcf(), update, interval=10)  # Update every 100ms
+ani = FuncAnimation(plt.gcf(), update, interval=10)  # Update every 10ms
 plt.show()
