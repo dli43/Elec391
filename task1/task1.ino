@@ -1,6 +1,7 @@
 #include "Arduino_BMI270_BMM150.h"
 
 float ax,ay,az;
+char userInput;
 
 void setup() {
 
@@ -17,10 +18,22 @@ void setup() {
 
 void loop() {
 
-  // Reads the acceleration values when it is ready to be read
-  if(IMU.accelerationAvailable()) {
-    IMU.readAcceleration(ax, ay, az);
+  if(Serial.available() > 0){
+
+    userInput = Serial.read();
     
+    // Reads the acceleration values when it is ready to be read and is requested
+    if(IMU.accelerationAvailable() && userInput == 'g') {
+      IMU.readAcceleration(ax, ay, az);
+
+      //Serial.print(ax);
+      //Serial.print('\t');
+      //Serial.print(ay);
+      //Serial.print('\t');
+      Serial.println(az);
+
+    }
+
   }
 
 }
