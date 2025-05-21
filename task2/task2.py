@@ -10,10 +10,11 @@ def animate(i, dataList, ser):
 
 
     try:
-        ax_str, ay_str = arduinoData_string.split(",")
+        ax_str, ay_str, az_str = arduinoData_string.split(",")
         ax_val = float(ax_str)
         ay_val = float(ay_str)                          # Convert to float
-        theta_rad = math.atan(-ay_val/ax_val)
+        az_val = float(az_str)
+        theta_rad = math.atan(ay_val/az_val)
         theta_deg = math.degrees(theta_rad)
         dataList.append(theta_deg)                          # Add to the list holding the fixed number of points to animate
 

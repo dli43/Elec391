@@ -28,13 +28,15 @@ void loop() {
       IMU.readAcceleration(ax, ay, az);
       Serial.print(ax);
       Serial.print(",");
-      Serial.println(ay);
+      Serial.print(ay);
+      Serial.print(",");
+      Serial.println(az);
     }
     
     
     if(IMU.gyroscopeAvailable() && userInput == 'g'){
-      IMU.readGyroscope(gz, gy, gz);
-      Serial.println(gz);
+      IMU.readGyroscope(gx, gy, gz);
+      Serial.println(gx);
     }
 
   }

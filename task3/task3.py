@@ -13,10 +13,11 @@ def animate(i, dataList, ser, deltaT):
       arduinoData_string = ser.readline().decode('ascii').strip() # Decode receive Arduino data as a formatted string
 
       try:
-          ax_str, ay_str = arduinoData_string.split(",")
+          ax_str, ay_str, az_str = arduinoData_string.split(",")
           ax_val = float(ax_str)
-          ay_val = float(ay_str)                        
-          theta_rad = math.atan(-ay_val/ax_val)
+          ay_val = float(ay_str)
+          az_val = float(az_str)                        
+          theta_rad = math.atan(ay_val/az_val)
           theta_deg = math.degrees(theta_rad)
           dataList.append(theta_deg)
           reference_angle_computed = True                         
@@ -30,9 +31,9 @@ def animate(i, dataList, ser, deltaT):
         arduinoData_string = ser.readline().decode('ascii')
 
         try:
-            gz_val= -float(arduinoData_string)
+            gx_val= -float(arduinoData_string)
             theta_prev = dataList[-1]
-            theta_next = theta_prev + gz_val*deltaT
+            theta_next = theta_prev + gx_val*deltaT
             dataList.append(theta_next)
         except:
             pass
