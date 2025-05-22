@@ -4,12 +4,13 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import math
 
-def animate(i, accelerometerList, gyroscopeList, filteredList, ser, deltaT):
-    global reference_angle_computed
+def animate(i, ser, deltaT):
+    global reference_angle_computed, accelerometerList, gyroscopeList, filteredList
     
     theta_a = get_accelerometer_theta(ser)
     print("theta_a computed")
     if reference_angle_computed:
+        print(gyroscopeList[-1])
         theta_g = get_gyroscope_theta(gyroscopeList[-1], deltaT, ser)
         print("theta_g computed")
         theta_k = 0 #get_filtered_theta(theta_a = theta_a, theta_g = get_gyroscope_theta(filteredList[-1], deltaT, ser))
@@ -38,7 +39,8 @@ def animate(i, accelerometerList, gyroscopeList, filteredList, ser, deltaT):
     ax.set_ylabel("Value")                              # Set title of y axis 
 
 def get_accelerometer_theta(ser) -> float:
-    ser.write(b'a')                                                 # Transmit the char 'a' to receive the accelerometer values
+    ser.write(b'a')
+    time.sleep(0.05)                                                 # Transmit the char 'a' to receive the accelerometer values
     arduinoData_string = ser.readline().decode('ascii').strip()     # Decode receive Arduino data as a formatted string
 
     try:
@@ -54,8 +56,10 @@ def get_accelerometer_theta(ser) -> float:
         pass
 
 def get_gyroscope_theta(theta_prev: float, deltaT: float, ser) -> float:
-    ser.write(b'g')                                             # Transmit the char 'g' to receive the gyroscope values
-    arduinoData_string = ser.readline().decode('ascii').strip()         # Decode receive Arduino data as a formatted string
+    ser.write(b'g')                                          # Transmit the char 'g' to receive the gyroscope values
+    print("written successfully")
+    time.sleep(0.05)
+    arduinoData_string = ser.readline().decode('ascii')         # Decode receive Arduino data as a formatted string
     print("data recieved")
     print(arduinoData_string)
     try:
@@ -78,7 +82,7 @@ accelerometerList = []
 filteredList = []
                                                         
 fig = plt.figure()                                      # Create Matplotlib plots fig is the 'higher level' plot window
-ax = fig.add_subplot(311)                               # Add subplot to main fig window
+ax = fig.add_subplot(111)                               # Add subplot to main fig window
 
 ser = serial.Serial("COM3", 9600)                       # Establish Serial object with COM port and BAUD rate to match Arduino Port/rate
 time.sleep(2)                                           # Time delay for Arduino Serial initialization 
@@ -87,7 +91,7 @@ deltaT = 0.1
 
                                                         # Matplotlib Animation Fuction that takes takes care of real time plot.
                                                         # Note that 'fargs' parameter is where we pass in our dataList and Serial object. 
-ani = animation.FuncAnimation(fig, animate, frames=100, fargs=(accelerometerList, gyroscopeList, filteredList, ser, deltaT), interval=deltaT*1e3)
+ani = animation.FuncAnimation(fig, animate, frames=100, fargs=(ser, deltaT), interval=deltaT*1e3)
 
 plt.show()                                              # Keep Matplotlib plot persistent on screen until it is closed
 ser.close()   
