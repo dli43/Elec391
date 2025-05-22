@@ -4,19 +4,19 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import math
 
-def animate(i, ser, deltaT):
+def animate(i, ser, deltaT, k_val):
     global reference_angle_computed, accelerometerList, gyroscopeList, filteredList
     
     theta_a = get_accelerometer_theta(ser)
     if reference_angle_computed:
         theta_g = get_gyroscope_theta(gyroscopeList[-1], deltaT, ser)
-        theta_k = get_filtered_theta(theta_a = theta_a, theta_g = get_gyroscope_theta(filteredList[-1], deltaT, ser))
+        theta_k = get_filtered_theta(theta_a = theta_a, theta_g = get_gyroscope_theta(filteredList[-1], deltaT, ser), k_val=k_val)
     else:
         theta_g = theta_a
         theta_k = theta_a
         reference_angle_computed = True
     
-    accelerometerList.append(theta_a)
+    accelerometerList.append(theta_a)                   
     gyroscopeList.append(theta_g)
     filteredList.append(theta_k)
 
@@ -32,7 +32,8 @@ def animate(i, ser, deltaT):
 
     ax.set_ylim([-91, 91])                              # Set Y axis limit of plot
     ax.set_title("Arduino Data")                        # Set title of figure
-    ax.set_ylabel("Value")                              # Set title of y axis 
+    ax.set_ylabel("Angle (Degrees)")                              # Set title of y axis 
+    ax.set_yticks([-75, -60, -45, -30, -15, 0, 15, 30, 45, 60, 75])
 
 def get_accelerometer_theta(ser) -> float:
     ser.write(b'a')
@@ -62,9 +63,8 @@ def get_gyroscope_theta(theta_prev: float, deltaT: float, ser) -> float:
     except:
         pass
     
-def get_filtered_theta(theta_a: float, theta_g: float) -> float:
-    k = 0.5
-    theta_k = k*theta_g + (1-k) * theta_a
+def get_filtered_theta(theta_a: float, theta_g: float, k_val: float) -> float:
+    theta_k = k_val*theta_g + (1-k_val) * theta_a
     return theta_k
 
 
@@ -80,10 +80,11 @@ ser = serial.Serial("COM3", 9600)                       # Establish Serial objec
 time.sleep(2)                                           # Time delay for Arduino Serial initialization 
 reference_angle_computed = False
 deltaT = 0.1
+k_val = 0.01
 
                                                         # Matplotlib Animation Fuction that takes takes care of real time plot.
                                                         # Note that 'fargs' parameter is where we pass in our dataList and Serial object. 
-ani = animation.FuncAnimation(fig, animate, frames=100, fargs=(ser, deltaT), interval=deltaT*1e3)
+ani = animation.FuncAnimation(fig, animate, frames=100, fargs=(ser, deltaT, k_val), interval=deltaT*1e3)
 
 plt.show()                                              # Keep Matplotlib plot persistent on screen until it is closed
 ser.close()   
