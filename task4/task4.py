@@ -8,17 +8,13 @@ def animate(i, ser, deltaT):
     global reference_angle_computed, accelerometerList, gyroscopeList, filteredList
     
     theta_a = get_accelerometer_theta(ser)
-    print("theta_a computed")
     if reference_angle_computed:
-        print(gyroscopeList[-1])
         theta_g = get_gyroscope_theta(gyroscopeList[-1], deltaT, ser)
-        print("theta_g computed")
-        theta_k = 0 #get_filtered_theta(theta_a = theta_a, theta_g = get_gyroscope_theta(filteredList[-1], deltaT, ser))
+        theta_k = get_filtered_theta(theta_a = theta_a, theta_g = get_gyroscope_theta(filteredList[-1], deltaT, ser))
     else:
         theta_g = theta_a
         theta_k = theta_a
         reference_angle_computed = True
-    print("all angles computed")
     
     accelerometerList.append(theta_a)
     gyroscopeList.append(theta_g)
@@ -57,14 +53,10 @@ def get_accelerometer_theta(ser) -> float:
 
 def get_gyroscope_theta(theta_prev: float, deltaT: float, ser) -> float:
     ser.write(b'g')                                          # Transmit the char 'g' to receive the gyroscope values
-    print("written successfully")
-    time.sleep(0.05)
+    time.sleep(0.02)
     arduinoData_string = ser.readline().decode('ascii')         # Decode receive Arduino data as a formatted string
-    print("data recieved")
-    print(arduinoData_string)
     try:
         g_val= -float(arduinoData_string)
-        print("data decoded")
         theta_g = theta_prev + g_val*deltaT
         return theta_g
     except:
