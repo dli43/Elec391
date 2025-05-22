@@ -80,7 +80,7 @@ ser = serial.Serial("COM3", 9600)                       # Establish Serial objec
 time.sleep(2)                                           # Time delay for Arduino Serial initialization 
 reference_angle_computed = False
 deltaT = 0.1
-k_val = 0.01
+k_val = 0.5
 
                                                         # Matplotlib Animation Fuction that takes takes care of real time plot.
                                                         # Note that 'fargs' parameter is where we pass in our dataList and Serial object. 

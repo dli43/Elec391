@@ -7,10 +7,10 @@ void setup() {
 
   Serial.begin(9600);   // Initialize baud rate
   while (!Serial);      // Wait for serial to start
-  Serial.println("Started");
+  Serial.print("Started\n");
 
   if (!IMU.begin()) {     // Check if IMU module has initialized
-    Serial.println("Failed to initialize IMU!");
+    Serial.print("Failed to initialize IMU!\n");
     while (1);
   }
 
@@ -30,7 +30,8 @@ void loop() {
       Serial.print(",");
       Serial.print(ay);
       Serial.print(",");
-      Serial.println(az);
+      Serial.print(az);
+      Serial.print("\n")
       
     }
 

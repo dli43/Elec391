@@ -30,7 +30,8 @@ void loop() {
       //Serial.print('\t');
       //Serial.print(ay);
       //Serial.print('\t');
-      Serial.println(az);
+      Serial.print(az);
+      Serial.print("\n")
 
     }
 

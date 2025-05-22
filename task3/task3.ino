@@ -30,13 +30,15 @@ void loop() {
       Serial.print(",");
       Serial.print(ay);
       Serial.print(",");
-      Serial.println(az);
+      Serial.print(az);
+      Serial.print("\n")
     }
     
-    
+    // Reads the gyroscope values when it is ready to be read and is requested
     if(IMU.gyroscopeAvailable() && userInput == 'g'){
       IMU.readGyroscope(gx, gy, gz);
-      Serial.println(gx);
+      Serial.print(gx);
+      Serial.print("\n")
     }
 
   }
