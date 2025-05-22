@@ -31,7 +31,7 @@ void loop() {
       Serial.print(ay);
       Serial.print(",");
       Serial.print(az);
-      Serial.print("\n")
+      Serial.print("\n");
       
     }
 
