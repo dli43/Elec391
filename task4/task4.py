@@ -1,5 +1,6 @@
 import time
 import serial
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
@@ -21,32 +22,60 @@ def animate(i, gyroscopeList, accelerometerList, filteredList, ser):
 
     accelerometerList = accelerometerList[-50:]   
     gyroscopeList = gyroscopeList[-50:]
-    filteredList = filteredList[-50:]                       
-    
-    ax.clear()                                          # Clear last data frame
-    ax.plot(accelerometerList)                                  
-    ax.plot(gyroscopeList)
-    ax.plot(filteredList)
-    ax.legend(["accelerometer theta","gyroscope theta","filtered theta"])
+    filteredList = filteredList[-50:] 
 
-    ax.set_ylim([-91, 91])                              # Set Y axis limit of plot
-    ax.set_title("Arduino Data")                        # Set title of figure
-    ax.set_ylabel("Angle (Degrees)")                              # Set title of y axis 
-    ax.set_yticks([-75, -60, -45, -30, -15, 0, 15, 30, 45, 60, 75])
+    yticks = np.linspace(-y_margin,y_margin,resolution)
+                     
+    ax.clear()                                          
+    ax.plot(accelerometerList)  
+    ax.set_ylim([-y_margin, y_margin])                                                     
+    ax.set_ylabel("Angle (Degrees)")                              
+    ax.set_yticks(yticks)
+    
+    if subplots:
+        ax.set_title("Accelerometer Theta")
+        
+        ay.clear()                                
+        ay.plot(gyroscopeList,"g")
+        ay.set_ylim([-y_margin, y_margin])                              
+        ay.set_title("Gyroscope Theta")                       
+        ay.set_ylabel("Angle (Degrees)")                              
+        ay.set_yticks(yticks)
+        
+        az.clear()
+        az.plot(filteredList,"r")
+        az.set_ylim([-y_margin, y_margin])                              
+        az.set_title("Filtered Theta")                       
+        az.set_ylabel("Angle (Degrees)")                              
+        az.set_yticks(yticks)
+    else:
+        ax.plot(gyroscopeList)
+        ax.plot(filteredList)
+        ax.legend(["accelerometer theta","gyroscope theta","filtered theta"])        
+
 
 gyroscopeList = []              
 accelerometerList = []
-filteredList = []                                          
+filteredList = []            
+
+subplots = False
+y_margin = 90
+resolution = 13 
                                                         
 fig = plt.figure()                                      # Create Matplotlib plots fig is the 'higher level' plot window
-ax = fig.add_subplot(111)                               # Add subplot to main fig window
+if subplots:
+    ax = fig.add_subplot(311)                               
+    ay = fig.add_subplot(312)
+    az = fig.add_subplot(313)
+else:
+    ax = fig.add_subplot(111)
 
 ser = serial.Serial("COM4", 9600)                       # Establish Serial object with COM port and BAUD rate to match Arduino Port/rate
 time.sleep(5)                                           # Time delay for Arduino Serial initialization 
 
                                                         # Matplotlib Animation Fuction that takes takes care of real time plot.
                                                         # Note that 'fargs' parameter is where we pass in our dataList and Serial object. 
-ani = animation.FuncAnimation(fig, animate, frames=100, fargs=(gyroscopeList, accelerometerList, filteredList, ser), interval=100) 
+ani = animation.FuncAnimation(fig, animate, frames=100, fargs=(gyroscopeList, accelerometerList, filteredList, ser), interval=10) 
 
 plt.show()                                              # Keep Matplotlib plot persistent on screen until it is closed
 ser.close()   
