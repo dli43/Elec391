@@ -13,7 +13,7 @@ char userInput;
 
 void setup() {
 
-  Serial.begin(9600);   // Initialize baud rate
+  Serial.begin(115200);   // Initialize baud rate
   while (!Serial);      // Wait for serial to start
   Serial.println("Started");
 
