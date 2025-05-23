@@ -1,7 +1,7 @@
 #include "Arduino_BMI270_BMM150.h"
 #include "math.h"
 
-const float pi = 3.114159;
+const float pi = 3.14159;
 bool reference_angle_computed = false;
 float ax,ay,az;
 float gx,gy,gz;
