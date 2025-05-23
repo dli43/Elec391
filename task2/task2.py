@@ -2,21 +2,14 @@ import time
 import serial
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-import math
 
 def animate(i, dataList, ser):
     ser.write(b'g')                                                 # Transmit the char 'g' to receive the Arduino data point
-    arduinoData_string = ser.readline().decode('ascii').strip()     # Decode receive Arduino data as a formatted string
-
+    arduinoData_string = ser.readline().decode('ascii')             # Decode receive Arduino data as a formatted string
 
     try:
-        ax_str, ay_str, az_str = arduinoData_string.split(",")      # Parse string into floats
-        ax_val = float(ax_str)
-        ay_val = float(ay_str)                          
-        az_val = float(az_str)
-        theta_rad = math.atan(ay_val/az_val)
-        theta_deg = math.degrees(theta_rad)                         # Calculate angle
-        dataList.append(theta_deg)                                  # Add data point to list
+        theta = float(arduinoData_string)                       
+        dataList.append(theta)                                  # Add data point to list
 
     except:                                             # Pass if data point is bad                               
         pass
@@ -35,7 +28,7 @@ dataList = []                                           # Create empty list vari
 fig = plt.figure()                                      # Create Matplotlib plots fig is the 'higher level' plot window
 ax = fig.add_subplot(111)                               # Add subplot to main fig window
 
-ser = serial.Serial("COM3", 9600)                       # Establish Serial object with COM port and BAUD rate to match Arduino Port/rate
+ser = serial.Serial("COM4", 9600)                       # Establish Serial object with COM port and BAUD rate to match Arduino Port/rate
 time.sleep(2)                                           # Time delay for Arduino Serial initialization 
 
                                                         # Matplotlib Animation Fuction that takes takes care of real time plot.

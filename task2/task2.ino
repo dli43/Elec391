@@ -1,6 +1,9 @@
 #include "Arduino_BMI270_BMM150.h"
+#include "math.h"
 
-float ax,ay,az;
+const float pi = 3.14159;
+float ax, ay, az;
+float theta_rad ,theta_deg;
 char userInput;
 
 void setup() {
@@ -18,19 +21,16 @@ void setup() {
 
 void loop() {
 
-  if(Serial.available() > 0){
+  if(Serial.available() > 0){         // User input detected
 
     userInput = Serial.read();
     
-    // Reads the acceleration values when it is ready to be read and is requested
-    if(IMU.accelerationAvailable() && userInput == 'g') {
-      IMU.readAcceleration(ax, ay, az);
+    if(IMU.accelerationAvailable() && userInput == 'g') {   // User request
 
-      Serial.print(ax);
-      Serial.print(",");
-      Serial.print(ay);
-      Serial.print(",");
-      Serial.print(az);
+      IMU.readAcceleration(ax, ay, az);       // Read acceleration values into variables
+      theta_rad = atan(ay/az);                // Compute theta
+      theta_deg = (180/pi)*theta_rad;         // Convert to degrees
+      Serial.print(theta_deg);
       Serial.print("\n");
       
     }

@@ -2,42 +2,17 @@ import time
 import serial
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-import math
 
-def animate(i, dataList, ser, deltaT):
-    global reference_angle_computed
-    
-    if not reference_angle_computed:                                # If sampling first angle then use accelerometer
-      
-      ser.write(b'a')                                               # Transmit the char 'a' to receive the starting accelerometer values
-      arduinoData_string = ser.readline().decode('ascii').strip()   # Decode receive Arduino data as a formatted string
+def animate(i, dataList, ser):
+    ser.write(b'g')                                                 # Transmit the char 'g' to receive the Arduino data point
+    arduinoData_string = ser.readline().decode('ascii')             # Decode receive Arduino data as a formatted string
 
-      try:
-          ax_str, ay_str, az_str = arduinoData_string.split(",")    # Parse string into floats
-          ax_val = float(ax_str)
-          ay_val = float(ay_str)
-          az_val = float(az_str)                        
-          theta_rad = math.atan(ay_val/az_val)
-          theta_deg = math.degrees(theta_rad)                       # Calculate angle
-          dataList.append(theta_deg)
-          reference_angle_computed = True                         
+    try:
+        theta = float(arduinoData_string)                       
+        dataList.append(theta)                                  # Add data point to list
 
-      except:                                             # Pass if data point is bad                               
-          pass
-      
-    else:
-        
-        ser.write(b'g')
-        arduinoData_string = ser.readline().decode('ascii')
-
-        try:
-            gx_val= -float(arduinoData_string)                  # Convert into float
-            theta_prev = dataList[-1]
-            theta_next = theta_prev + gx_val*deltaT             # Calculate angle    
-            dataList.append(theta_next)
-        except:
-            pass
-        
+    except:                                             # Pass if data point is bad                               
+        pass
 
     dataList = dataList[-50:]                           # Fix the list size so that the animation plot 'window' is x number of points
     
@@ -53,14 +28,12 @@ dataList = []                                           # Create empty list vari
 fig = plt.figure()                                      # Create Matplotlib plots fig is the 'higher level' plot window
 ax = fig.add_subplot(111)                               # Add subplot to main fig window
 
-ser = serial.Serial("COM3", 9600)                       # Establish Serial object with COM port and BAUD rate to match Arduino Port/rate
+ser = serial.Serial("COM4", 9600)                       # Establish Serial object with COM port and BAUD rate to match Arduino Port/rate
 time.sleep(2)                                           # Time delay for Arduino Serial initialization 
-reference_angle_computed = False
-deltaT = 0.1
 
                                                         # Matplotlib Animation Fuction that takes takes care of real time plot.
                                                         # Note that 'fargs' parameter is where we pass in our dataList and Serial object. 
-ani = animation.FuncAnimation(fig, animate, frames=100, fargs=(dataList, ser, deltaT), interval=deltaT*1e3)
+ani = animation.FuncAnimation(fig, animate, frames=100, fargs=(dataList, ser), interval=100) 
 
 plt.show()                                              # Keep Matplotlib plot persistent on screen until it is closed
-ser.close()   
+ser.close()                                               # Keep Matplotlib plot persistent on screen until it is closed

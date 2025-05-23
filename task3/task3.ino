@@ -1,7 +1,13 @@
 #include "Arduino_BMI270_BMM150.h"
+#include "math.h"
 
+const float pi = 3.114159;
+bool reference_angle_computed = false;
 float ax,ay,az;
 float gx,gy,gz;
+float theta;
+unsigned long prev_time, present_time;
+float elapsed_time;
 char userInput;
 
 void setup() {
@@ -19,25 +25,26 @@ void setup() {
 
 void loop() {
 
-  if(Serial.available() > 0){
+ if(Serial.available() > 0){   // User input detected
 
     userInput = Serial.read();
     
-    // Reads the acceleration values when it is ready to be read and is requested
-    if(IMU.accelerationAvailable() && userInput == 'a') {
-      IMU.readAcceleration(ax, ay, az);
-      Serial.print(ax);
-      Serial.print(",");
-      Serial.print(ay);
-      Serial.print(",");
-      Serial.print(az);
+    if(IMU.accelerationAvailable() && userInput == 'g' && !reference_angle_computed) {    // First theta sample request
+      IMU.readAcceleration(ax,ay,az);
+      prev_time = micros();             // Mark time when acceleration is sampled
+      theta = (180/pi)*atan(ay/az);
+      Serial.print(theta);
       Serial.print("\n");
+      reference_angle_computed = true;  // Reference angle is computed so that integration can be used       
     }
     
-    // Reads the gyroscope values when it is ready to be read and is requested
-    if(IMU.gyroscopeAvailable() && userInput == 'g'){
+    else if(IMU.gyroscopeAvailable() && userInput == 'g' && reference_angle_computed){    // Gyroscope theta sample request
       IMU.readGyroscope(gx, gy, gz);
-      Serial.print(gx);
+      present_time = micros();          
+      elapsed_time = (float)(present_time - prev_time)/1e6;       // Calculate time that has passed since last sample read
+      prev_time = present_time;
+      theta = theta + (-gx)*elapsed_time;                          // Note the minus sign, this is to denote the orientation of the velocity
+      Serial.print(theta);
       Serial.print("\n");
     }
 
