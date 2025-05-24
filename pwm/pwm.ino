@@ -3,7 +3,7 @@ int A1_MD = 5;       // Set the pin numbers for the h-bridge driver motor
 int A2_MD = 4;   
 int B1_MD = 2;   
 int B2_MD = 3;
-int duty_cycle = 128;     // Set duty cycle value for PWM: 0 (always off), 255(always on)         
+int duty_cycle = 255;     // Set duty cycle value for PWM: 0 (always off), 255(always on)         
 
 
 void setup() {
@@ -11,11 +11,12 @@ void setup() {
   pinMode(A2_MD, OUTPUT);
   pinMode(B1_MD, OUTPUT);
   pinMode(B2_MD, OUTPUT);
+  digitalWrite(A1_MD, HIGH);
+  analogWrite(A2_MD, duty_cycle);
+  digitalWrite(B1_MD, HIGH);
+  analogWrite(B2_MD, duty_cycle);
 }
 
 void loop() {
-  analogWrite(A1_MD, duty_cycle);
-  analogWrite(A2_MD, duty_cycle);
-  analogWrite(B1_MD, duty_cycle);
-  analogWrite(B2_MD, duty_cycle);
+  
 }
