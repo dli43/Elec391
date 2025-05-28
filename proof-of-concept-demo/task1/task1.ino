@@ -15,24 +15,30 @@ void setup() {
 
 void loop() {                       // Run motors in forwards mode using pwm control
 
-  duty_cycle = 191;                 // 25% speed
+  duty_cycle = 191;                 // 25% speed forward
   digitalWrite(A1_MD, HIGH);
   digitalWrite(B1_MD, HIGH);
   analogWrite(A2_MD, duty_cycle);
   analogWrite(B2_MD, duty_cycle);
   delay(5000);
 
-  duty_cycle = 127;                 // 50% speed
+  duty_cycle = 127;                 // 50% speed forward
+  digitalWrite(A1_MD, HIGH);
+  digitalWrite(B1_MD, HIGH);
   analogWrite(A2_MD, duty_cycle);
   analogWrite(B2_MD, duty_cycle);
   delay(5000);
 
-  duty_cycle = 63;                  // 75% speed
+  duty_cycle = 63;                  // 75% speed forward
+  digitalWrite(A1_MD, HIGH);
+  digitalWrite(B1_MD, HIGH);
   analogWrite(A2_MD, duty_cycle);
   analogWrite(B2_MD, duty_cycle);
   delay(5000);
 
-  duty_cycle = 0;                   // 100% speed
+  duty_cycle = 0;                   // 100% speed forward
+  digitalWrite(A1_MD, HIGH);
+  digitalWrite(B1_MD, HIGH);
   analogWrite(A2_MD, duty_cycle);
   analogWrite(B2_MD, duty_cycle);
   delay(5000);
