@@ -87,5 +87,7 @@ void loop() {
       digitalWrite(B1_MD, HIGH);
       digitalWrite(B2_MD, HIGH);
     }
+
+    new_filtered_angle = false;
   }
 }
