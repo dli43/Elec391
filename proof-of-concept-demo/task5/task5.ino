@@ -1,4 +1,5 @@
 #include "Arduino_BMI270_BMM150.h"
+#include "math.h"
 
 const float pi = 3.14159;
 const float k = 0.5;
@@ -24,7 +25,10 @@ void setup() {
   pinMode(A2_MD, OUTPUT);
   pinMode(B1_MD, OUTPUT);
   pinMode(B2_MD, OUTPUT);
-  
+
+  if (!IMU.begin()) {     // Check if IMU module has initialized
+    while (1);
+  }
 
 }
 
@@ -70,7 +74,7 @@ void loop() {
       analogWrite(B2_MD, duty_cycle);
     }
     //tilted backward
-    else if(theta_k > 0){
+    else if(theta_k < 0){
       analogWrite(A1_MD, duty_cycle);
       digitalWrite(A2_MD, LOW);
       analogWrite(B1_MD, duty_cycle);
@@ -78,10 +82,10 @@ void loop() {
     }
     //no tilt
     else{
-      digitalWrite(A1_MD, LOW);
-      digitalWrite(A2_MD, LOW);
-      digitalWrite(B1_MD, LOW);
-      digitalWrite(B2_MD, LOW);
+      digitalWrite(A1_MD, HIGH);
+      digitalWrite(A2_MD, HIGH);
+      digitalWrite(B1_MD, HIGH);
+      digitalWrite(B2_MD, HIGH);
     }
   }
 }
