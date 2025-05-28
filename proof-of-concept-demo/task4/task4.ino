@@ -1,3 +1,4 @@
+#include "Arduino_BMI270_BMM150.h"
 
 int A1_MD = 5;       // Set the pin numbers for the h-bridge driver motor 
 int A2_MD = 4;   
@@ -13,7 +14,7 @@ void setup() {
   pinMode(B2_MD, OUTPUT);
 
   if(!IMU.begin()){
-    while(1)
+    while(1);
   }
 }
 
@@ -21,17 +22,17 @@ void loop() {
 
     //25% power for 5s
     duty_cycle = 191;
-    digitalWrite(A1_MD, HIGH);
-    digitalWrite(B1_MD, duty_cycle);
-    analogWrite(A2_MD, duty_cycle);
-    analogWrite(B2_MD, HIGH);
+    analogWrite(A1_MD, duty_cycle);
+    digitalWrite(A2_MD, HIGH);
+    digitalWrite(B1_MD, HIGH);
+    analogWrite(B2_MD, duty_cycle);
     delay(5000);
 
     //75% power for 5s
     duty_cycle = 63;
-    digitalWrite(A1_MD, HIGH);
-    digitalWrite(B1_MD, duty_cycle);
-    analogWrite(A2_MD, duty_cycle);
-    analogWrite(B2_MD, HIGH);
+    analogWrite(A1_MD, duty_cycle);
+    digitalWrite(A2_MD, HIGH);
+    digitalWrite(B1_MD, HIGH);
+    analogWrite(B2_MD, duty_cycle);
     delay(5000);
 }
