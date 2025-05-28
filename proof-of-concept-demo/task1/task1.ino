@@ -11,12 +11,13 @@ void setup() {
   pinMode(A2_MD, OUTPUT);
   pinMode(B1_MD, OUTPUT);
   pinMode(B2_MD, OUTPUT);
+}
+
+void loop() {
+  duty_cycle = 
   digitalWrite(A1_MD, HIGH);
   analogWrite(A2_MD, duty_cycle);
   digitalWrite(B1_MD, HIGH);
   analogWrite(B2_MD, duty_cycle);
-}
-
-void loop() {
   
 }
