@@ -1,0 +1,4 @@
+Part A-
+M: 1kg
+L: 5e-2 m
+I: 25e-4 kgm^2
