@@ -54,6 +54,8 @@ void setup()
   pinMode(B1_MD, OUTPUT);
   pinMode(B2_MD, OUTPUT);
 
+  delay(5000);
+
 }
 
 
