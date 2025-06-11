@@ -99,9 +99,9 @@ void loop()
 
   Serial.println("DONE");   // Finish
   digitalWrite(A1_MD, HIGH);
-  digitalWrite(A2_MD, duty_cycle);
+  digitalWrite(A2_MD, HIGH);
   digitalWrite(B1_MD, HIGH);
-  digitalWrite(B2_MD, duty_cycle);
+  digitalWrite(B2_MD, HIGH);
   while(1);
   
 
