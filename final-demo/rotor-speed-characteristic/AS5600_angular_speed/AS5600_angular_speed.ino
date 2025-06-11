@@ -22,7 +22,11 @@ int B1_MD = 2;
 int B2_MD = 3;
 int duty_cycle;      // Set duty cycle value for PWM: 0 (always on), 255(always off)
 
-int as5600_select = 6;    // Select the address pin for the i2c multiplexer
+float rpm_buffer[40];
+float rpm_values[511];
+float sum;
+
+bool flag = false;
 
 
 void setup()
@@ -50,22 +54,58 @@ void setup()
   pinMode(B1_MD, OUTPUT);
   pinMode(B2_MD, OUTPUT);
 
-  pinMode(as5600_select, OUTPUT);   // Set the i2c multiplexer select pin as output
-
-  delay(1000);
 }
 
 
 void loop()
 {
-  duty_cycle = 191;     // 25% opposite wheel turn direction
-  digitalWrite(A1_MD, HIGH);
-  analogWrite(A2_MD, duty_cycle);
-  analogWrite(B1_MD, duty_cycle);
-  digitalWrite(B2_MD, HIGH);
+  for(int i = -255; i <= 255; i++){    // Start with maximum reverse speed and end with maximum forward speed
 
-  Serial.println(as5600.getAngularSpeed(AS5600_MODE_RPM));
-  delay(50);
+    if(i < 0){    // Reverse rotation
+      duty_cycle = 255 + i;
+      analogWrite(A1_MD, duty_cycle);
+      digitalWrite(A2_MD, HIGH);
+      analogWrite(B1_MD, duty_cycle);
+      digitalWrite(B2_MD, HIGH);
+    }
+    else{       // Forward Rotation
+      duty_cycle = 255 - i;
+      digitalWrite(A1_MD, HIGH);
+      analogWrite(A2_MD, duty_cycle);
+      digitalWrite(B1_MD, HIGH);
+      analogWrite(B2_MD, duty_cycle);
+    }
+
+    if(!flag){    // Flag for minimizing bias on first measurement
+      delay(5000);
+      flag = true;
+    }
+
+    sum = 0;          // Average multiple angular speed measurements for each duty cycle
+    for(int k = 0; k < 40; k++){
+      rpm_buffer[k] = as5600.getAngularSpeed(AS5600_MODE_RPM);
+      delay(25);
+      sum = sum + rpm_buffer[k];
+    }
+
+    int index = i + 255;  // since i goes from -255 to 255
+    if (index >= 0 && index < 511) {
+      rpm_values[index] = sum / 40;
+      Serial.println(rpm_values[index]);
+    }
+
+
+  }
+
+  Serial.println("DONE");   // Finish
+  digitalWrite(A1_MD, HIGH);
+  digitalWrite(A2_MD, duty_cycle);
+  digitalWrite(B1_MD, HIGH);
+  digitalWrite(B2_MD, duty_cycle);
+  while(1);
+  
+
+
 }
 
 
