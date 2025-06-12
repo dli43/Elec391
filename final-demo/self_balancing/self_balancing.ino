@@ -2,7 +2,7 @@
 #include "math.h"
 
 const float pi = 3.14159;
-const float k = 0.5;
+const float k = 0.4;
 const float cutoff_angle = 30.0;
 bool reference_angle_computed = false;
 bool new_filtered_angle = false;
@@ -11,6 +11,7 @@ float gx,gy,gz;
 float theta_a, theta_g, theta_k, theta_k_prev;
 unsigned long prev_time, present_time;
 float elapsed_time;
+float integral = 0;
 char userInput;
 
 int A1_MD = 5;       // Set the pin numbers for the h-bridge driver motor 
@@ -19,9 +20,14 @@ int B1_MD = 2;
 int B2_MD = 3;
 int duty_cycle = 0;
 
-const float kp = 1.11070812735063;        // PID values
-const float ki = 5.45515833375866;
-const float kd = 0.0560940026343969;
+const float kp = 8;        // PID values
+const float ki = 2;
+//const float ki = 0.1;
+const float kd = 0.15;
+float pid_p;
+float pid_i = 0;
+float pid_d;
+float dutycycle_drive;
 
 void setup() {
 
@@ -34,9 +40,12 @@ void setup() {
     while (1);
   }
 
+  Serial.begin(115200);
+
 }
 
 void loop() {
+
 
   if(IMU.accelerationAvailable()){
     IMU.readAcceleration(ax, ay, az);       // Read acceleration values into variables
@@ -61,9 +70,6 @@ void loop() {
       prev_time = present_time;
       theta_g = theta_g + (-gx)*elapsed_time;                         // Compute theta_g
       theta_k = k*(theta_k_prev + (-gx)*elapsed_time) + (1-k)*theta_a;     // Compute theta_k
-
-      
-      theta_k_prev = theta_k;
       new_filtered_angle = true;
     }
 
@@ -72,32 +78,43 @@ void loop() {
   if(new_filtered_angle){
 
     //calculate pwm value based on absolute value of tilt angle
-    
+    pid_d = kd*(theta_k-theta_k_prev)/elapsed_time;
+    pid_p = kp*theta_k;
+    integral += theta_k*elapsed_time;
+    pid_i = constrain(ki*(integral), -255, 255);
 
-    duty_cycle = 255 - min(int(255*abs(theta_k)/cutoff_angle), 255);
-    
+    dutycycle_drive = int(pid_d+pid_i+pid_p);
+    duty_cycle = 255-min(abs(dutycycle_drive), 255);
+
     //tilted forward
-    if(theta_k > 0){
-      digitalWrite(A1_MD, HIGH);
-      analogWrite(A2_MD, duty_cycle);
-      digitalWrite(B1_MD, HIGH);
-      analogWrite(B2_MD, duty_cycle);
-    }
-    //tilted backward
-    else if(theta_k < 0){
+    if(dutycycle_drive < 0){
       analogWrite(A1_MD, duty_cycle);
       digitalWrite(A2_MD, LOW);
       analogWrite(B1_MD, duty_cycle);
-      digitalWrite(B2_MD, HIGH);
+      digitalWrite(B2_MD, LOW);
+    }
+    //tilted backward
+    else if(dutycycle_drive > 0){
+      digitalWrite(A1_MD, LOW);
+      analogWrite(A2_MD, duty_cycle);
+      digitalWrite(B1_MD, LOW);
+      analogWrite(B2_MD, duty_cycle);
     }
     //no tilt
     else{
-      digitalWrite(A1_MD, HIGH);
-      digitalWrite(A2_MD, HIGH);
-      digitalWrite(B1_MD, HIGH);
-      digitalWrite(B2_MD, HIGH);
+      digitalWrite(A1_MD, LOW);
+      digitalWrite(A2_MD, LOW);
+      digitalWrite(B1_MD, LOW);
+      digitalWrite(B2_MD, LOW);
     }
 
     new_filtered_angle = false;
+
+    theta_k_prev = theta_k;
+  }
+
+  if(Serial.available()){
+    input_str = Serial.readStringUntil('\n');
+    input_str = 
   }
 }
