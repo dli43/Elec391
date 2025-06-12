@@ -8,7 +8,7 @@ bool reference_angle_computed = false;
 bool new_filtered_angle = false;
 float ax,ay,az;
 float gx,gy,gz;
-float theta_a, theta_g, theta_k;
+float theta_a, theta_g, theta_k, theta_k_prev;
 unsigned long prev_time, present_time;
 float elapsed_time;
 char userInput;
@@ -18,6 +18,10 @@ int A2_MD = 4;
 int B1_MD = 2;   
 int B2_MD = 3;
 int duty_cycle = 0;
+
+const float kp = 1.11070812735063;        // PID values
+const float ki = 5.45515833375866;
+const float kd = 0.0560940026343969;
 
 void setup() {
 
@@ -42,6 +46,7 @@ void loop() {
       prev_time = micros();                 // Mark time when acceleration is sampled
       theta_g = theta_a;
       theta_k = theta_a;
+      theta_k_prev = theta_k;
       reference_angle_computed = true;
     }
     
@@ -55,7 +60,10 @@ void loop() {
       elapsed_time = (float)(present_time - prev_time)/1e6;           // Calculate time that has passed since last sample read
       prev_time = present_time;
       theta_g = theta_g + (-gx)*elapsed_time;                         // Compute theta_g
-      theta_k = k*(theta_k + (-gx)*elapsed_time) + (1-k)*theta_a;     // Compute theta_k
+      theta_k = k*(theta_k_prev + (-gx)*elapsed_time) + (1-k)*theta_a;     // Compute theta_k
+
+      
+      theta_k_prev = theta_k;
       new_filtered_angle = true;
     }
 
@@ -64,6 +72,8 @@ void loop() {
   if(new_filtered_angle){
 
     //calculate pwm value based on absolute value of tilt angle
+    
+
     duty_cycle = 255 - min(int(255*abs(theta_k)/cutoff_angle), 255);
     
     //tilted forward
