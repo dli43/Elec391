@@ -12,7 +12,6 @@ float theta_a, theta_g, theta_k, theta_k_prev;
 unsigned long prev_time, present_time;
 float elapsed_time;
 float integral = 0;
-char userInput;
 
 int A1_MD = 5;       // Set the pin numbers for the h-bridge driver motor 
 int A2_MD = 4;   
@@ -20,7 +19,7 @@ int B1_MD = 2;
 int B2_MD = 3;
 int duty_cycle = 0;
 
-const float kp = 8;        // PID values
+const float kp = 15;        // PID values
 const float ki = 2;
 //const float ki = 0.1;
 const float kd = 0.15;
@@ -84,17 +83,17 @@ void loop() {
     pid_i = constrain(ki*(integral), -255, 255);
 
     dutycycle_drive = int(pid_d+pid_i+pid_p);
-    duty_cycle = 255-min(abs(dutycycle_drive), 255);
+    duty_cycle = min(abs(dutycycle_drive), 255);
 
     //tilted forward
-    if(dutycycle_drive < 0){
+    if(dutycycle_drive > 0){
       analogWrite(A1_MD, duty_cycle);
       digitalWrite(A2_MD, LOW);
       analogWrite(B1_MD, duty_cycle);
       digitalWrite(B2_MD, LOW);
     }
     //tilted backward
-    else if(dutycycle_drive > 0){
+    else if(dutycycle_drive < 0){
       digitalWrite(A1_MD, LOW);
       analogWrite(A2_MD, duty_cycle);
       digitalWrite(B1_MD, LOW);
@@ -111,10 +110,5 @@ void loop() {
     new_filtered_angle = false;
 
     theta_k_prev = theta_k;
-  }
-
-  if(Serial.available()){
-    input_str = Serial.readStringUntil('\n');
-    input_str = 
   }
 }
