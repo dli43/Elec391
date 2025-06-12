@@ -19,7 +19,7 @@ int B1_MD = 2;
 int B2_MD = 3;
 int duty_cycle = 0;
 
-const float kp = 15;        // PID values
+const float kp = 25;        // PID values
 const float ki = 2;
 //const float ki = 0.1;
 const float kd = 0.15;
@@ -85,8 +85,22 @@ void loop() {
     dutycycle_drive = int(pid_d+pid_i+pid_p);
     duty_cycle = min(abs(dutycycle_drive), 255);
 
+
+    if(theta_k > cutoff_angle){
+      analogWrite(A1_MD, 255);
+      digitalWrite(A2_MD, LOW);
+      analogWrite(B1_MD, 255);
+      digitalWrite(B2_MD, LOW);
+    }
+
+    else if(theta_k < -cutoff_angle){
+      digitalWrite(A1_MD, LOW);
+      analogWrite(A2_MD, 255);
+      digitalWrite(B1_MD, LOW);
+      analogWrite(B2_MD, 255);
+    }
     //tilted forward
-    if(dutycycle_drive > 0){
+    else if(dutycycle_drive > 0){
       analogWrite(A1_MD, duty_cycle);
       digitalWrite(A2_MD, LOW);
       analogWrite(B1_MD, duty_cycle);
