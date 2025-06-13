@@ -1,0 +1,1 @@
+Gyroscope has a bias of -0.38 deg/s
