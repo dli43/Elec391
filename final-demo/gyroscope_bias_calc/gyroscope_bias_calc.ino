@@ -1,5 +1,5 @@
 #include "Arduino_BMI270_BMM150.h"
-#define Samples 6000
+#define Samples 6000.0
 
 float gx,gy,gz;
 float sum, average;
@@ -22,18 +22,19 @@ void loop() {
 
   sum = 0;
   counter = 0;
-  while(counter < Samples)
+  while(counter < Samples){
     
     if(IMU.gyroscopeAvailable()) {
-      sum = sum + IMU.readgyroscope();
+      IMU.readGyroscope(gx, gy, gz);
+      sum = sum + gx;
       counter++;
     }
     
   }
 
   average = sum/Samples;
-  Serial.printl("The bias of the gyroscope is: ");
-  Serial.println(sum);
+  Serial.print("The bias of the gyroscope is: ");
+  Serial.println(average,4);
   while(1);
 
 }

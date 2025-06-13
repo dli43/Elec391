@@ -124,17 +124,11 @@ void loop() {
     new_filtered_angle = false;
 
     theta_k_prev = theta_k;
-  
-
-  Serial.print("Theta: ");
-  Serial.print(theta_k);
-  Serial.print(" | PID: ");
-  Serial.print(pid_p + pid_i + pid_d);
-  Serial.print(" | Duty: ");
-  Serial.println(duty_cycle);    
+    Serial.print("Theta: ");
+    Serial.print(theta_k);
+    Serial.print(" | PID: ");
+    Serial.print(pid_p + pid_i + pid_d);
+    Serial.print(" | Duty: ");
+    Serial.println(duty_cycle); 
   }
-
-
-
-
 }

@@ -51,7 +51,8 @@ def animate(i, gyroscopeList, accelerometerList, filteredList, ser):
     else:
         ax.plot(gyroscopeList)
         ax.plot(filteredList)
-        ax.legend(["accelerometer theta","gyroscope theta","filtered theta"])        
+        ax.legend(["accelerometer theta","gyroscope theta","filtered theta"])   
+    plt.grid()     
 
 
 gyroscopeList = []              
@@ -59,10 +60,11 @@ accelerometerList = []
 filteredList = []            
 
 subplots = False
-y_margin = 90
-resolution = 13 
+y_margin = 5
+resolution = 9 
                                                         
-fig = plt.figure()                                      # Create Matplotlib plots fig is the 'higher level' plot window
+fig = plt.figure()    
+                                  # Create Matplotlib plots fig is the 'higher level' plot window
 if subplots:
     ax = fig.add_subplot(311)                               
     ay = fig.add_subplot(312)
@@ -75,7 +77,7 @@ time.sleep(5)                                           # Time delay for Arduino
 
                                                         # Matplotlib Animation Fuction that takes takes care of real time plot.
                                                         # Note that 'fargs' parameter is where we pass in our dataList and Serial object. 
-ani = animation.FuncAnimation(fig, animate, frames=100, fargs=(gyroscopeList, accelerometerList, filteredList, ser), interval=10) 
+ani = animation.FuncAnimation(fig, animate, frames=100, fargs=(gyroscopeList, accelerometerList, filteredList, ser), interval=25) 
 
 plt.show()                                              # Keep Matplotlib plot persistent on screen until it is closed
 ser.close()   
