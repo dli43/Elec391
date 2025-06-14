@@ -3,8 +3,8 @@
 #include "AS5600.h"
 
 const float pi = 3.14159;
-const float k = 0.9;
-const float cutoff_angle = 30.0;
+const float k = 0.995;
+const int pwm_deadzone = 44;
 bool reference_angle_computed = false;
 bool new_filtered_angle = false;
 float ax,ay,az;
@@ -20,13 +20,15 @@ int B1_MD = 2;
 int B2_MD = 3;
 int duty_cycle = 0;
 
-const float kp = 8;        // PID values
-const float ki = 0;
-const float kd = 0.55;
+float kp = 8;        // PID values
+float ki = 0;
+float kd = 0.55;
 float pid_p;
 float pid_i = 0;
 float pid_d;
 float dutycycle_drive;
+static String input_str = "";
+char input_char = ' ';
 AS5600 as5600; 
 
 void setup() {
@@ -84,7 +86,8 @@ void loop() {
     pid_i = constrain(ki*(integral), -255, 255);
 
     dutycycle_drive = int(pid_d+pid_i+pid_p);
-    duty_cycle = min(abs(dutycycle_drive)+50, 255);
+    duty_cycle = min(abs(dutycycle_drive), 255);
+    duty_cycle = max(duty_cycle, pwm_deadzone);
 
     //tilted forward
     if(dutycycle_drive == 0){
@@ -117,19 +120,50 @@ void loop() {
     new_filtered_angle = false;
 
     theta_k_prev = theta_k;
-    Serial.print("Theta: ");
-    Serial.print(theta_k);
-    Serial.print(" | dutycylcle_drive: ");
-    Serial.print(dutycycle_drive);
-    Serial.print(" | PID: ");
-    Serial.print(duty_cycle);
-    Serial.print(" | P: ");
-    Serial.print(pid_p); 
-    Serial.print(" | I: ");
-    Serial.print(pid_i);
-    Serial.print(" | D: ");
-    Serial.print(pid_d);
+    // Serial.print("Theta: ");
+    // Serial.print(theta_k);
+    // Serial.print(" | dutycylcle_drive: ");
+    // Serial.print(dutycycle_drive);
+    // Serial.print(" | PID: ");
+    // Serial.print(duty_cycle);
+    // Serial.print(" | P: ");
+    // Serial.print(pid_p); 
+    // Serial.print(" | I: ");
+    // Serial.print(pid_i);
+    // Serial.print(" | D: ");
+    // Serial.print(pid_d);
 
-    Serial.print("\n");
+    // Serial.print("\n");
+  }
+
+  //reads input 1 char at a time
+  if(Serial.available()){
+    input_char = (char)Serial.read();
+
+    //if data fully sent
+    if(input_char == '\n'){
+        int comma1 = input_str.indexOf(',');
+        int comma2 = input_str.indexOf(',', comma1+1);
+
+        //if data formatted correctly
+        if(comma1 > 0 && comma2 > comma1){
+          kp = input_str.substring(0, comma1).toFloat();
+          ki = input_str.substring(comma1+1, comma2).toFloat();
+          kd = input_str.substring(comma2+2).toFloat();
+
+          //print new values
+          Serial.print("kp: "); Serial.print(kp);
+          Serial.print(" ki: "); Serial.print(ki);
+          Serial.print(" kd: "); Serial.println(kd);
+        }
+
+        //clear input string after reading
+        input_str = "";
+    }
+
+    //if data still sending
+    else{
+      input_str += input_char;
+    }
   }
 }
