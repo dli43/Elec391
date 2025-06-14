@@ -1,8 +1,9 @@
 #include "Arduino_BMI270_BMM150.h"
 #include "math.h"
+#define gyro_bias -0.4352
 
 const float pi = 3.14159;
-const float k = 0.5;
+const float k = 0.995;
 bool reference_angle_computed = false;
 float ax,ay,az;
 float gx,gy,gz;
@@ -15,10 +16,10 @@ void setup() {
 
   Serial.begin(115200);   // Initialize baud rate
   while (!Serial);      // Wait for serial to start
-  Serial.println("Started");
+  //Serial.println("Started");
 
   if (!IMU.begin()) {     // Check if IMU module has initialized
-    Serial.println("Failed to initialize IMU!");
+    //Serial.println("Failed to initialize IMU!");
     while (1);
   }
 
@@ -41,6 +42,7 @@ void loop() {
 
   if(IMU.gyroscopeAvailable()){
     IMU.readGyroscope(gx,gy,gz);            // Read angular velocity values into variables 
+    gx = gx - gyro_bias;
     
     if(reference_angle_computed){
       present_time = micros();          

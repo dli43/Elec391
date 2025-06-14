@@ -2,6 +2,7 @@ Gyroscope has a bias of -0.4352 deg/s
 
 - Revisit sensor data. We may have to adjust the complementary coefficient to meet our requirements.
 For a self-balancing robot, the complementary filter coefficient typically ranges from 0.96 to 0.9934.
+(We found that the optimum complementary coefficient is 0.995)
 
 - Our robot appears to have a deadband which prevents it from moving at small angles. 
 We will need to measure the duty cycles when the motors first start moving in either direction then provide an offset to compensate.
@@ -11,10 +12,11 @@ if (motorOutput > 0 && motorOutput < minPWM) {
 } else if (motorOutput < 0 && motorOutput > -minPWM) {
   motorOutput = -minPWM;
 }
+(Forward has a deadzone of 44, backward has a deadzone of 44)
 
 - Check that the time between sensor reading availabilities is stable. If it varies too much then we would need to implement an interrupt at a known rate.
 
 - Turn up the pwm frequency
 
 - The motor and arduino voltage may vary drastically as the power supply voltage changes to meet current demands. We can use a buck converter/voltage regulator on the arduino.
-Provide more electrolytic capacitors for the motors (make sure to place them close to teh motor drivers). Supply a high frequency capacitor.
+Provide more electrolytic capacitors for the motors (make sure to place them close to teh motor drivers). Supply a high frequency capacitor. Cut down on loose straggly wires.
