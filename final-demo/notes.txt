@@ -12,6 +12,7 @@ if (motorOutput > 0 && motorOutput < minPWM) {
 } else if (motorOutput < 0 && motorOutput > -minPWM) {
   motorOutput = -minPWM;
 }
+(Forward has a deadzone of 44, backward has a deadzone of 44)
 
 - Check that the time between sensor reading availabilities is stable. If it varies too much then we would need to implement an interrupt at a known rate.
 
