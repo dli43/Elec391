@@ -19,10 +19,11 @@ int A2_MD = 4;
 int B1_MD = 2;   
 int B2_MD = 3;
 int duty_cycle = 0;
+int angle_count = 0;
 
-float kp = 8;        // PID values
+float kp = 0;        // PID values
 float ki = 0;
-float kd = 0.55;
+float kd = 0;
 float pid_p;
 float pid_i = 0;
 float pid_d;
@@ -78,7 +79,7 @@ void loop() {
   }
 
   if(new_filtered_angle){
-
+    angle_count += 1;
     //calculate pwm value based on absolute value of tilt angle
     pid_d = kd*(theta_k-theta_k_prev)/elapsed_time;
     pid_p = kp*theta_k;
@@ -120,24 +121,26 @@ void loop() {
     new_filtered_angle = false;
 
     theta_k_prev = theta_k;
-    // Serial.print("Theta: ");
-    // Serial.print(theta_k);
-    // Serial.print(" | dutycylcle_drive: ");
-    // Serial.print(dutycycle_drive);
-    // Serial.print(" | PID: ");
-    // Serial.print(duty_cycle);
-    // Serial.print(" | P: ");
-    // Serial.print(pid_p); 
-    // Serial.print(" | I: ");
-    // Serial.print(pid_i);
-    // Serial.print(" | D: ");
-    // Serial.print(pid_d);
-
-    // Serial.print("\n");
+    if(angle_count == 10){
+      Serial.print("Theta: ");
+      Serial.print(theta_k);
+      Serial.print(" | dutycylcle_drive: ");
+      Serial.print(dutycycle_drive);
+      Serial.print(" | PID: ");
+      Serial.print(duty_cycle);
+      Serial.print(" | P: ");
+      Serial.print(pid_p); 
+      Serial.print(" | I: ");
+      Serial.print(pid_i);
+      Serial.print(" | D: ");
+      Serial.print(pid_d);
+      Serial.print("\n");
+      angle_count = 0;
+    }
   }
 
   //reads input 1 char at a time
-  if(Serial.available()){
+  if(Serial.available() > 0){
     input_char = (char)Serial.read();
 
     //if data fully sent
@@ -149,14 +152,16 @@ void loop() {
         if(comma1 > 0 && comma2 > comma1){
           kp = input_str.substring(0, comma1).toFloat();
           ki = input_str.substring(comma1+1, comma2).toFloat();
-          kd = input_str.substring(comma2+2).toFloat();
+          kd = input_str.substring(comma2+1).toFloat();
 
           //print new values
           Serial.print("kp: "); Serial.print(kp);
           Serial.print(" ki: "); Serial.print(ki);
           Serial.print(" kd: "); Serial.println(kd);
         }
-
+        else{
+          Serial.print("Bad Input vlaues");
+        }
         //clear input string after reading
         input_str = "";
     }
