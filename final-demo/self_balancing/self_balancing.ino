@@ -1,8 +1,9 @@
 #include "Arduino_BMI270_BMM150.h"
 #include "math.h"
+#include "AS5600.h"
 
 const float pi = 3.14159;
-const float k = 0.4;
+const float k = 0.9;
 const float cutoff_angle = 30.0;
 bool reference_angle_computed = false;
 bool new_filtered_angle = false;
@@ -19,14 +20,14 @@ int B1_MD = 2;
 int B2_MD = 3;
 int duty_cycle = 0;
 
-const float kp = 25;        // PID values
-const float ki = 2;
-//const float ki = 0.1;
-const float kd = 0.15;
+const float kp = 8;        // PID values
+const float ki = 0;
+const float kd = 0.55;
 float pid_p;
 float pid_i = 0;
 float pid_d;
 float dutycycle_drive;
+AS5600 as5600; 
 
 void setup() {
 
@@ -38,7 +39,7 @@ void setup() {
   if (!IMU.begin()) {     // Check if IMU module has initialized
     while (1);
   }
-
+  // Wire.begin();
   Serial.begin(115200);
 
 }
@@ -62,7 +63,7 @@ void loop() {
 
   if(IMU.gyroscopeAvailable()){
     IMU.readGyroscope(gx,gy,gz);            // Read angular velocity values into variables 
-    
+    gx += 0.4352;
     if(reference_angle_computed){
       present_time = micros();          
       elapsed_time = (float)(present_time - prev_time)/1e6;           // Calculate time that has passed since last sample read
@@ -83,24 +84,16 @@ void loop() {
     pid_i = constrain(ki*(integral), -255, 255);
 
     dutycycle_drive = int(pid_d+pid_i+pid_p);
-    duty_cycle = min(abs(dutycycle_drive), 255);
+    duty_cycle = min(abs(dutycycle_drive)+50, 255);
 
-
-    if(theta_k > cutoff_angle){
-      analogWrite(A1_MD, 255);
+    //tilted forward
+    if(dutycycle_drive == 0){
+      digitalWrite(A1_MD, LOW);
       digitalWrite(A2_MD, LOW);
-      analogWrite(B1_MD, 255);
+      digitalWrite(B1_MD, LOW);
       digitalWrite(B2_MD, LOW);
     }
-
-    else if(theta_k < -cutoff_angle){
-      digitalWrite(A1_MD, LOW);
-      analogWrite(A2_MD, 255);
-      digitalWrite(B1_MD, LOW);
-      analogWrite(B2_MD, 255);
-    }
-    //tilted forward
-    else if(dutycycle_drive > 0){
+    if(dutycycle_drive > 0){
       analogWrite(A1_MD, duty_cycle);
       digitalWrite(A2_MD, LOW);
       analogWrite(B1_MD, duty_cycle);
@@ -126,9 +119,17 @@ void loop() {
     theta_k_prev = theta_k;
     Serial.print("Theta: ");
     Serial.print(theta_k);
+    Serial.print(" | dutycylcle_drive: ");
+    Serial.print(dutycycle_drive);
     Serial.print(" | PID: ");
-    Serial.print(pid_p + pid_i + pid_d);
-    Serial.print(" | Duty: ");
-    Serial.println(duty_cycle); 
+    Serial.print(duty_cycle);
+    Serial.print(" | P: ");
+    Serial.print(pid_p); 
+    Serial.print(" | I: ");
+    Serial.print(pid_i);
+    Serial.print(" | D: ");
+    Serial.print(pid_d);
+
+    Serial.print("\n");
   }
 }
