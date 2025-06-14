@@ -20,3 +20,5 @@ if (motorOutput > 0 && motorOutput < minPWM) {
 
 - The motor and arduino voltage may vary drastically as the power supply voltage changes to meet current demands. We can use a buck converter/voltage regulator on the arduino.
 Provide more electrolytic capacitors for the motors (make sure to place them close to teh motor drivers). Supply a high frequency capacitor. Cut down on loose straggly wires.
+
+- Make sure to buy a MXT 250 fuse
