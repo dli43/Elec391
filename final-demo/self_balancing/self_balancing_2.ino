@@ -197,10 +197,10 @@
       update_k_value('p', kpIndex);
     }
     if(kiIndex != -1 && kiIndex < input_str.length()){
-      update_k_value('p', kpIndex);
+      update_k_value('i', kpIndex);
     }
     if(kdIndex != -1 && kdIndex < input_str.length()){
-      update_k_value('p', kpIndex);
+      update_k_value('d', kpIndex);
     }
 
     input_str = "";
