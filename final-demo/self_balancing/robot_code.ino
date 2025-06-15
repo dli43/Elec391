@@ -4,8 +4,9 @@
   #include <ArduinoBLE.h>
 
   const float pi = 3.14159;
-  const float k = 0.995;
+  const float k = 0.993;
   const int pwm_deadzone = 44;
+  const float standing_angle = -0.85;
   const float gyro_bias = -1.0642;
   bool reference_angle_computed = false;
   bool new_accelerometer_angle = false;
@@ -135,10 +136,13 @@
   }
 
   void calculate_pwm(){
+    //find correction angle
+    float correction_angle = theta_k - standing_angle;
+
     //calculate pwm value based on absolute value of tilt angle
     pid_d = kd*(theta_k-theta_k_prev)/elapsed_time;
-    pid_p = kp*theta_k;
-    integral += theta_k*elapsed_time;
+    pid_p = kp*correction_angle;
+    integral += correction_angle*elapsed_time;
     pid_i = constrain(ki*(integral), -255, 255);
 
     dutycycle_drive = int(pid_d+pid_i+pid_p);
@@ -216,7 +220,7 @@
 
   void update_k_value(char k_type, int kIndex){
 
-    int kval;
+    float kval;
 
     //find where the inputted value ends
     int endIndex = input_str.indexOf(' ', kIndex);
