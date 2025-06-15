@@ -72,7 +72,7 @@ if subplots:
 else:
     ax = fig.add_subplot(111)
 
-ser = serial.Serial("COM5", 115200)                       # Establish Serial object with COM port and BAUD rate to match Arduino Port/rate
+ser = serial.Serial("COM8", 115200)                       # Establish Serial object with COM port and BAUD rate to match Arduino Port/rate
 time.sleep(2)                                           # Time delay for Arduino Serial initialization 
 
                                                         # Matplotlib Animation Fuction that takes takes care of real time plot.

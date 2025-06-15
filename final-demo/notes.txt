@@ -2,7 +2,7 @@ Gyroscope has a bias of -1.0642 deg/s
 
 - Revisit sensor data. We may have to adjust the complementary coefficient to meet our requirements.
 For a self-balancing robot, the complementary filter coefficient typically ranges from 0.96 to 0.9934.
-(We found that the optimum complementary coefficient is 0.995)
+(We found that the optimum complementary coefficient is 0.993ddd)
 
 - Our robot appears to have a deadband which prevents it from moving at small angles. 
 We will need to measure the duty cycles when the motors first start moving in either direction then provide an offset to compensate.

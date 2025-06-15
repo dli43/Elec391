@@ -1,9 +1,9 @@
 #include "Arduino_BMI270_BMM150.h"
 #include "math.h"
-#define gyro_bias -0.4352
+#define gyro_bias -1.0642
 
 const float pi = 3.14159;
-const float k = 0.995;
+const float k = 0.993;
 bool reference_angle_computed = false;
 float ax,ay,az;
 float gx,gy,gz;
