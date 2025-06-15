@@ -2,13 +2,11 @@
   #include "math.h"
   #include "AS5600.h"
   #include <ArduinoBLE.h>
-  #include <Arduino_HS_PWM.h>
-
 
   const float pi = 3.14159;
   const float k = 0.995;
   const int pwm_deadzone = 44;
-  const float gyro_bias = -1.0428;
+  const float gyro_bias = -1.0642;
   bool reference_angle_computed = false;
   bool new_accelerometer_angle = false;
   bool new_gyro_angle = false;
@@ -47,8 +45,6 @@
   char input_char = ' ';
   AS5600 as5600; 
   
-  const int pwmPin = 5;
-  HSPWM pwm(pwmPin);
 
   void setup() {
 
@@ -66,10 +62,6 @@
 
     pinMode(LED_BUILTIN, OUTPUT);
     initialize_BLE();
-
-    pwm.begin(10000); // Set to 10 kHz frequency
-    pwm.analogWrite(128); // 50% duty cycle      
-    //analogWrite(pin, value) with pwm.analogWrite(value) wherever you use PWM in your motor control logic.
 
   }
 
@@ -195,32 +187,59 @@
   }
 
   void update_pid(){
-    
-    int kpIndex = input_str.indexOf('')
+    input_str.toLowerCase();
 
-    int comma1 = input_str.indexOf(',');
-    int comma2 = input_str.indexOf(',', comma1+1);
+    int kpIndex = input_str.indexOf('kp');
+    int kiIndex = input_str.indexOf('ki');
+    int kdIndex = input_str.indexOf('kd');
 
-    //if data formatted correctly
-    if(comma1 > 0 && comma2 > comma1){
-      kp = input_str.substring(0, comma1).toFloat();
-      ki = input_str.substring(comma1+1, comma2).toFloat();
-      kd = input_str.substring(comma2+1).toFloat();
-
-      //print new values
-      Serial.print("kp: "); Serial.print(kp);
-      Serial.print(" ki: "); Serial.print(ki);
-      Serial.print(" kd: "); Serial.println(kd);
+    if(kpIndex != -1){
+      update_k_value('p', kpIndex);
     }
-    //if input was bad
-    else{
-      Serial.print("Bad Input vlaues");
+    if(kpIndex != -1){
+      update_k_value('p', kpIndex);
+    }
+    if(kpIndex != -1){
+      update_k_value('p', kpIndex);
     }
 
-    //clear input string after reading
     input_str = "";
 
-  
+  }
+
+  void update_k_value(char k_type, int kIndex){
+
+    int kval;
+
+    //find where the inputted value ends
+    int endIndex = input_str.indexOf(' ', kIndex);
+
+    //if there is nothing after the value
+    if(endIndex == -1){             
+      kval = input_str.substring(kIndex).toFloat();
+    }
+
+    //if there is something else in the string
+    else{
+      kval = input_str.substring(kIndex, endIndex).toFloat();
+    }
+
+    //decide which k value to update
+    if(k_type == 'p'){
+      kp = kval;
+      Serial.print("kp: "); 
+      Serial.println(kp);
+    }
+    else if(k_type == 'i'){
+      ki = kval;
+      Serial.print("ki: "); 
+      Serial.println(ki);
+    }
+    else if(k_type == 'd'){
+      kd = kval;
+      Serial.print("kd: "); 
+      Serial.println(kd);
+    }
   }
 
   void initialize_BLE(){
