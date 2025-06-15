@@ -6,7 +6,7 @@
   const float pi = 3.14159;
   const float k = 0.995;
   const int pwm_deadzone = 44;
-  const float gyro_bias = 0.4352;
+  const float gyro_bias = -1.0428;
   bool reference_angle_computed = false;
   bool new_accelerometer_angle = false;
   bool new_gyro_angle = false;
