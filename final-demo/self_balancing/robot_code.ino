@@ -6,10 +6,9 @@
   const float pi = 3.14159;
   const float k = 0.993;
   const int pwm_deadzone = 44;
-  const float standing_angle = -0.85;
+  const float standing_angle = -0.875;
   const float gyro_bias = -1.0642;
   bool reference_angle_computed = false;
-  bool new_accelerometer_angle = false;
   bool new_gyro_angle = false;
 
   const char* BLE_name = "TEAM1-BLE-ROBOT";
@@ -70,7 +69,6 @@
 
     if(IMU.accelerationAvailable()){
       read_accelerometer(); //update theta_a
-      new_accelerometer_angle = true;
     }
 
     if(IMU.gyroscopeAvailable()){
@@ -81,7 +79,7 @@
     }
 
     //once both sensors have measured something
-    if(new_accelerometer_angle && new_gyro_angle){
+    if(new_gyro_angle){
       theta_k = k*(theta_k_prev+(-gx)*elapsed_time) + (1-k)*theta_a;
       angle_count += 1;
       calculate_pwm();
@@ -114,7 +112,6 @@
     //set previous theta_k value for next loop
     theta_k_prev = theta_k;
     new_gyro_angle = false;
-    new_accelerometer_angle = false;
   }
 
   //reads accelerometer values and stores angle in theta_a
