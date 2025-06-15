@@ -6,7 +6,7 @@
   const float pi = 3.14159;
   const float k = 0.993;
   const int pwm_deadzone = 44;
-  const float standing_angle = -0.875;
+  const float standing_angle = -0.89;
   const float gyro_bias = -1.0642;
   bool reference_angle_computed = false;
   bool new_gyro_angle = false;
@@ -40,7 +40,7 @@
   float pid_p;
   float pid_i = 0;
   float pid_d;
-  float dutycycle_drive;
+  int dutycycle_drive;
   static String input_str = "";
   char input_char = ' ';
   AS5600 as5600; 
@@ -89,6 +89,7 @@
         print_info();
         angle_count = 0;
       }
+      new_gyro_angle = false;
     }
 
     //read input data 1 char at a time
@@ -111,7 +112,6 @@
 
     //set previous theta_k value for next loop
     theta_k_prev = theta_k;
-    new_gyro_angle = false;
   }
 
   //reads accelerometer values and stores angle in theta_a
@@ -147,26 +147,27 @@
   }
 
   void drive_wheels(){
+
     //drive forward
     if(dutycycle_drive > 0){
       analogWrite(A1_MD, duty_cycle);
-      digitalWrite(A2_MD, LOW);
+      analogWrite(A2_MD, 0);
       analogWrite(B1_MD, duty_cycle);
-      digitalWrite(B2_MD, LOW);
+      analogWrite(B2_MD, 0);
     }
     //drive backward
     else if(dutycycle_drive < 0){
-      digitalWrite(A1_MD, LOW);
+      analogWrite(A1_MD, 0);
       analogWrite(A2_MD, duty_cycle);
-      digitalWrite(B1_MD, LOW);
+      analogWrite(B1_MD, 0);
       analogWrite(B2_MD, duty_cycle);
     }
     //no drive
     else{
-      digitalWrite(A1_MD, LOW);
-      digitalWrite(A2_MD, LOW);
-      digitalWrite(B1_MD, LOW);
-      digitalWrite(B2_MD, LOW);
+      analogWrite(A1_MD, 0);
+      analogWrite(A2_MD, 0);
+      analogWrite(B1_MD, 0);
+      analogWrite(B2_MD, 0);
     }
   }
 
