@@ -1,6 +1,7 @@
   #include "Arduino_BMI270_BMM150.h"
   #include "math.h"
   #include "AS5600.h"
+  #include <ArduinoBLE.h>
 
   const float pi = 3.14159;
   const float k = 0.995;
@@ -9,6 +10,14 @@
   bool reference_angle_computed = false;
   bool new_accelerometer_angle = false;
   bool new_gyro_angle = false;
+
+  const char* BLE_name = "TEAM1-ROBOT";
+  const char* UUID = "00000000-5EC4-4083-81CD-A10B8D5CF6EC";
+  BLEDevice central;
+  bool isConnected = false;
+  const int BUFFER_SIZE = 20;
+  BLEService customService(UUID);
+  BLECharacteristic customCharacteristic(UUID, BLERead | BLEWrite | BLENotify, BUFFER_SIZE, false);
 
   float ax,ay,az;
   float gx,gy,gz;
@@ -34,6 +43,7 @@
   static String input_str = "";
   char input_char = ' ';
   AS5600 as5600; 
+  
 
   void setup() {
 
@@ -45,13 +55,16 @@
     if (!IMU.begin()) {     // Check if IMU module has initialized
       while (1);
     }
-    // Wire.begin();
+    Wire.begin();
+    
     Serial.begin(115200);
+
+    pinMode(LED_BUILTIN, OUTPUT);
+    initialize_BLE();
 
   }
 
   void loop() {
-
 
     if(IMU.accelerationAvailable()){
       read_accelerometer(); //update theta_a
@@ -67,12 +80,10 @@
 
     //once both sensors have measured something
     if(new_accelerometer_angle && new_gyro_angle){
-      theta_k = k*(-gx)*elapsed_time + (1-k)*theta_a;
+      theta_k = k*(theta_k_prev+(-gx)*elapsed_time) + (1-k)*theta_a;
       angle_count += 1;
       calculate_pwm();
-
       drive_wheels();
-
       //send info once every 10 angle measurements
       if(angle_count == 10){
         print_info();
@@ -94,6 +105,9 @@
         input_str += input_char;
       }
     }
+
+    //run BLE logic
+    runBLE();
 
     //set previous theta_k value for next loop
     theta_k_prev = theta_k;
@@ -193,4 +207,71 @@
 
     //clear input string after reading
     input_str = "";
+
+  
+  }
+
+  void initialize_BLE(){
+    
+    if (!BLE.begin()) {
+    Serial.println("Starting BLE failed!");
+    while (1); //jail
+    }
+
+    // Set the device name and local name
+    BLE.setLocalName(BLE_name);
+    BLE.setDeviceName(BLE_name);
+
+    // Add the characteristic to the service
+    customService.addCharacteristic(customCharacteristic);
+
+    // Add the service
+    BLE.addService(customService);
+
+    // Set an initial value for the characteristic
+    customCharacteristic.writeValue("Waiting for data");
+
+    // Start advertising the service
+    BLE.advertise();
+
+    Serial.println("Bluetooth® device active, waiting for connections...");
+  }
+
+
+  //BLE communication logic
+  void runBLE(){
+    // Check for new central connections
+    BLEDevice newCentral = BLE.central();
+
+    // Handle new connection
+    if (newCentral && !isConnected) {
+      central = newCentral;
+      isConnected = true;
+      Serial.print("Connected to central: ");
+      Serial.println(central.address());
+      digitalWrite(LED_BUILTIN, HIGH);
+    }
+
+    // Handle disconnection
+    if (isConnected && !central.connected()) {
+      isConnected = false;
+      Serial.println("Disconnected from central.");
+      digitalWrite(LED_BUILTIN, LOW);
+    }
+
+    // If connected, check for incoming data
+    if (isConnected && customCharacteristic.written()) {
+      int length = customCharacteristic.valueLength();
+      const unsigned char* receivedData = customCharacteristic.value();
+
+      char receivedString[length + 1];
+      memcpy(receivedString, receivedData, length);
+      receivedString[length] = '\0';
+
+      Serial.print("Received data: ");
+      Serial.println(receivedString);
+
+      customCharacteristic.writeValue("Data received");
+    }
+
   }
