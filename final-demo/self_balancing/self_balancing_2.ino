@@ -11,13 +11,14 @@
   bool new_accelerometer_angle = false;
   bool new_gyro_angle = false;
 
-  const char* BLE_name = "TEAM1-ROBOT";
-  const char* UUID = "00000000-5EC4-4083-81CD-A10B8D5CF6EC";
+  const char* BLE_name = "TEAM1-BLE-ROBOT";
+  const char* service_UUID = "00000000-5EC4-4083-81CD-A10B8D5CF6EC";
+  const char* characteristic_UUID = "00000001-5EC4-4083-81CD-A10B8D5CF6EC";
   BLEDevice central;
   bool isConnected = false;
   const int BUFFER_SIZE = 20;
-  BLEService customService(UUID);
-  BLECharacteristic customCharacteristic(UUID, BLERead | BLEWrite | BLENotify, BUFFER_SIZE, false);
+  BLEService customService(service_UUID);
+  BLECharacteristic customCharacteristic(characteristic_UUID, BLERead | BLEWrite | BLENotify, BUFFER_SIZE, false);
 
   float ax,ay,az;
   float gx,gy,gz;
@@ -86,7 +87,7 @@
       drive_wheels();
       //send info once every 10 angle measurements
       if(angle_count == 10){
-        print_info();
+        //print_info();
         angle_count = 0;
       }
     }
@@ -186,6 +187,9 @@
   }
 
   void update_pid(){
+    
+    int kpIndex = input_str.indexOf('')
+
     int comma1 = input_str.indexOf(',');
     int comma2 = input_str.indexOf(',', comma1+1);
 

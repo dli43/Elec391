@@ -1,4 +1,4 @@
-Gyroscope has a bias of -0.4352 deg/s
+Gyroscope has a bias of -1.0642 deg/s
 
 - Revisit sensor data. We may have to adjust the complementary coefficient to meet our requirements.
 For a self-balancing robot, the complementary filter coefficient typically ranges from 0.96 to 0.9934.

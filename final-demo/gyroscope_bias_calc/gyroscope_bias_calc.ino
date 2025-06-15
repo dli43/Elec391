@@ -1,5 +1,5 @@
 #include "Arduino_BMI270_BMM150.h"
-#define Samples 6000.0
+#define Samples 15000.0;
 
 float gx,gy,gz;
 float sum, average;
