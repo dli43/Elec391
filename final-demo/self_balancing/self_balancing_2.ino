@@ -2,6 +2,8 @@
   #include "math.h"
   #include "AS5600.h"
   #include <ArduinoBLE.h>
+  #include <Arduino_HS_PWM.h>
+
 
   const float pi = 3.14159;
   const float k = 0.995;
@@ -45,6 +47,8 @@
   char input_char = ' ';
   AS5600 as5600; 
   
+  const int pwmPin = 5;
+  HSPWM pwm(pwmPin);
 
   void setup() {
 
@@ -62,6 +66,10 @@
 
     pinMode(LED_BUILTIN, OUTPUT);
     initialize_BLE();
+
+    pwm.begin(10000); // Set to 10 kHz frequency
+    pwm.analogWrite(128); // 50% duty cycle      
+    //analogWrite(pin, value) with pwm.analogWrite(value) wherever you use PWM in your motor control logic.
 
   }
 
