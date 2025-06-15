@@ -189,17 +189,17 @@
   void update_pid(){
     input_str.toLowerCase();
 
-    int kpIndex = input_str.indexOf('kp');
-    int kiIndex = input_str.indexOf('ki');
-    int kdIndex = input_str.indexOf('kd');
+    int kpIndex = input_str.indexOf("kp")+3;
+    int kiIndex = input_str.indexOf("ki")+3;
+    int kdIndex = input_str.indexOf("kd")+3;
 
-    if(kpIndex != -1){
+    if(kpIndex != -1 && kpIndex < input_str.length()){
       update_k_value('p', kpIndex);
     }
-    if(kpIndex != -1){
+    if(kiIndex != -1 && kiIndex < input_str.length()){
       update_k_value('p', kpIndex);
     }
-    if(kpIndex != -1){
+    if(kdIndex != -1 && kdIndex < input_str.length()){
       update_k_value('p', kpIndex);
     }
 
@@ -222,6 +222,11 @@
     //if there is something else in the string
     else{
       kval = input_str.substring(kIndex, endIndex).toFloat();
+    }
+
+    //print if there is a possible error
+    if(kval == 0){
+      Serial.println("Possible error detected");
     }
 
     //decide which k value to update
