@@ -86,8 +86,8 @@
       calculate_pwm();
       drive_wheels();
       //send info once every 10 angle measurements
-      if(angle_count == 10){
-        //print_info();
+      if(angle_count == 30){
+        print_info();
         angle_count = 0;
       }
     }
@@ -142,8 +142,7 @@
     pid_i = constrain(ki*(integral), -255, 255);
 
     dutycycle_drive = int(pid_d+pid_i+pid_p);
-    duty_cycle = min(abs(dutycycle_drive), 255);
-    duty_cycle = max(duty_cycle, pwm_deadzone);
+    duty_cycle = min(abs(dutycycle_drive)+pwm_deadzone, 255);
   }
 
   void drive_wheels(){
@@ -189,18 +188,26 @@
   void update_pid(){
     input_str.toLowerCase();
 
-    int kpIndex = input_str.indexOf("kp")+3;
-    int kiIndex = input_str.indexOf("ki")+3;
-    int kdIndex = input_str.indexOf("kd")+3;
+    //debugging
+    //Serial.println(input_str);
+
+    int kpIndex = input_str.indexOf("kp");
+    int kiIndex = input_str.indexOf("ki");
+    int kdIndex = input_str.indexOf("kd");
+
+    //debugging
+    // Serial.println(kpIndex);
+    // Serial.println(kiIndex);
+    // Serial.println(kdIndex);
 
     if(kpIndex != -1 && kpIndex < input_str.length()){
-      update_k_value('p', kpIndex);
+      update_k_value('p', kpIndex+3);
     }
     if(kiIndex != -1 && kiIndex < input_str.length()){
-      update_k_value('i', kpIndex);
+      update_k_value('i', kiIndex+3);
     }
     if(kdIndex != -1 && kdIndex < input_str.length()){
-      update_k_value('d', kpIndex);
+      update_k_value('d', kdIndex+3);
     }
 
     input_str = "";
