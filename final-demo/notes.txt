@@ -22,3 +22,5 @@ if (motorOutput > 0 && motorOutput < minPWM) {
 Provide more electrolytic capacitors for the motors (make sure to place them close to teh motor drivers). Supply a high frequency capacitor. Cut down on loose straggly wires.
 
 - Make sure to buy a MXT 250 fuse
+
+- For casting dutycycle_drive use round(pid) instead of int(pid)
