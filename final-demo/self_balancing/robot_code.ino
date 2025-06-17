@@ -161,7 +161,18 @@
     pid_i = ki*(integral);
     pid_d = kd*(theta_k-theta_k_prev)/elapsed_time;
 
-    dutycycle_drive = int(pid_d+pid_i+pid_p)+0.5;
+    float pid = pid_p+pid_i+pid_d;
+
+    if(pid > 0){
+      dutycycle_drive = int(pid+0.5);
+    }
+    else if(pid < 0){
+      dutycycle_drive = int(pid-0.5);
+    }
+    else{
+      dutycycle_drive = 0;
+    }
+
     duty_cycle = min(abs(dutycycle_drive)+pwm_deadzone, 255);
   }
 
