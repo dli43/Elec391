@@ -1,6 +1,6 @@
 #include "Arduino_BMI270_BMM150.h"
 #include "math.h"
-#define gyro_bias -1.0642
+#define gyro_bias 0.0807
 
 const float pi = 3.14159;
 const float k = 0.993;
