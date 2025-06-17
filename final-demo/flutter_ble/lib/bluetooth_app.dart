@@ -212,6 +212,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    //forward button
                     ElevatedButton(
                       onPressed:
                           _isConnected ? () => _sendCommand('FORWARD') : null,
@@ -223,21 +224,24 @@ class _MyHomePageState extends State<MyHomePage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    //left button
                     ElevatedButton(
                       onPressed:
-                          _isConnected ? () => _sendCommand('FORWARD') : null,
+                          _isConnected ? () => _sendCommand('LEFT') : null,
                       child: const Icon(Icons.arrow_back),
                     ),
                     const SizedBox(width: 10),
+                    //backwards button
                     ElevatedButton(
                       onPressed:
-                          _isConnected ? () => _sendCommand('FORWARD') : null,
+                          _isConnected ? () => _sendCommand('BACKWARD') : null,
                       child: const Icon(Icons.arrow_downward),
                     ),
                     const SizedBox(width: 10),
+                    //right button
                     ElevatedButton(
                       onPressed:
-                          _isConnected ? () => _sendCommand('FORWARD') : null,
+                          _isConnected ? () => _sendCommand('RIGHT') : null,
                       child: const Icon(Icons.arrow_forward),
                     ),
                   ],
@@ -253,7 +257,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                     const SizedBox(width: 10),
                     ElevatedButton(
-                      onPressed: _isConnected ? () => _sendCommand('A') : null,
+                      onPressed: _isConnected ? () => _sendCommand('STOP') : null,
                       child: const Text('Send A'),
                     ),
                     const SizedBox(width: 10),
