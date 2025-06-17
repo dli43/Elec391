@@ -5,9 +5,10 @@
 
   const float pi = 3.14159;
   const float k = 0.993;
-  const int pwm_deadzone = 44;
-  const float standing_angle = -0.89;
-  const float gyro_bias = -1.0642;
+  const int pwm_deadzone = 46;
+  float standing_angle = 0;
+  const float gyro_bias = 0.0807;
+  float integral_constraint = 0.5;
   bool reference_angle_computed = false;
   bool new_gyro_angle = false;
 
@@ -34,9 +35,9 @@
   int duty_cycle = 0;
   int angle_count = 0;
 
-  float kp = 0;        // PID values
-  float ki = 0;
-  float kd = 0;
+  float kp = 1.5;        // PID values
+  float ki = 30;
+  float kd = 0.28;
   float pid_p;
   float pid_i = 0;
   float pid_d;
@@ -136,13 +137,16 @@
     //find correction angle
     float correction_angle = theta_k - standing_angle;
 
-    //calculate pwm value based on absolute value of tilt angle
-    pid_d = kd*(theta_k-theta_k_prev)/elapsed_time;
-    pid_p = kp*correction_angle;
+    
     integral += correction_angle*elapsed_time;
-    pid_i = constrain(ki*(integral), -255, 255);
+    integral = constrain(integral, -integral_constraint, integral_constraint);
 
-    dutycycle_drive = int(pid_d+pid_i+pid_p);
+    //calculate pwm value based on absolute value of tilt angle
+    pid_p = kp*correction_angle;
+    pid_i = ki*(integral);
+    pid_d = kd*(theta_k-theta_k_prev)/elapsed_time;
+
+    dutycycle_drive = int(pid_d+pid_i+pid_p)+0.5;
     duty_cycle = min(abs(dutycycle_drive)+pwm_deadzone, 255);
   }
 
@@ -190,12 +194,27 @@
   void update_pid(){
     input_str.toLowerCase();
 
+    if(input_str == "config"){
+      Serial.print("kp: "); 
+      Serial.println(kp, 4);
+      Serial.print("ki: "); 
+      Serial.println(ki, 4);
+      Serial.print("kd: "); 
+      Serial.println(kd, 4);
+      Serial.print("standing angle: "); 
+      Serial.println(standing_angle, 4);
+      Serial.print("integral constraint: "); 
+      Serial.println(integral_constraint, 4);
+    }
+
     //debugging
     //Serial.println(input_str);
 
     int kpIndex = input_str.indexOf("kp");
     int kiIndex = input_str.indexOf("ki");
     int kdIndex = input_str.indexOf("kd");
+    int saIndex = input_str.indexOf("sa");
+    int icIndex = input_str.indexOf("ic");
 
     //debugging
     // Serial.println(kpIndex);
@@ -203,56 +222,71 @@
     // Serial.println(kdIndex);
 
     if(kpIndex != -1 && kpIndex < input_str.length()){
-      update_k_value('p', kpIndex+3);
+      update_value('p', kpIndex+3);
     }
     if(kiIndex != -1 && kiIndex < input_str.length()){
-      update_k_value('i', kiIndex+3);
+      update_value('i', kiIndex+3);
     }
     if(kdIndex != -1 && kdIndex < input_str.length()){
-      update_k_value('d', kdIndex+3);
+      update_value('d', kdIndex+3);
     }
-
+    if(saIndex != -1 && saIndex < input_str.length()){
+      update_value('s', saIndex+3);
+    }
+    if(icIndex != -1 && icIndex < input_str.length()){
+      update_value('c', icIndex+3);
+    }
     input_str = "";
 
   }
 
-  void update_k_value(char k_type, int kIndex){
+  void update_value(char type, int index){
 
-    float kval;
+    float val;
 
     //find where the inputted value ends
-    int endIndex = input_str.indexOf(' ', kIndex);
+    int endIndex = input_str.indexOf(' ', index);
 
     //if there is nothing after the value
     if(endIndex == -1){             
-      kval = input_str.substring(kIndex).toFloat();
+      val = input_str.substring(index).toFloat();
     }
 
     //if there is something else in the string
     else{
-      kval = input_str.substring(kIndex, endIndex).toFloat();
+      val = input_str.substring(index, endIndex).toFloat();
     }
 
     //print if there is a possible error
-    if(kval == 0){
+    if(val == 0){
       Serial.println("Possible error detected");
     }
 
     //decide which k value to update
-    if(k_type == 'p'){
-      kp = kval;
+    if(type == 'p'){
+      kp = val;
       Serial.print("kp: "); 
-      Serial.println(kp);
+      Serial.println(kp, 4);
     }
-    else if(k_type == 'i'){
-      ki = kval;
+    else if(type == 'i'){
+      ki = val;
       Serial.print("ki: "); 
-      Serial.println(ki);
+      Serial.println(ki, 4);
     }
-    else if(k_type == 'd'){
-      kd = kval;
+    else if(type == 'd'){
+      kd = val;
       Serial.print("kd: "); 
-      Serial.println(kd);
+      Serial.println(kd, 4);
+    }
+    else if(type == 's'){
+      standing_angle = val;
+      Serial.print("standing angle: "); 
+      Serial.println(standing_angle, 4);
+    }
+    else if(type == 'c'){
+      integral_constraint = val;
+      Serial.print("integral constraint: "); 
+      Serial.println(integral_constraint, 4);
     }
   }
 
