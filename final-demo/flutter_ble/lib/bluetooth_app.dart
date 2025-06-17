@@ -258,7 +258,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     const SizedBox(width: 10),
                     ElevatedButton(
                       onPressed: _isConnected ? () => _sendCommand('STOP') : null,
-                      child: const Text('Send A'),
+                      child: const Text('STOP'),
                     ),
                     const SizedBox(width: 10),
                     ElevatedButton(

@@ -2,18 +2,25 @@
   #include "math.h"
   #include "AS5600.h"
   #include <ArduinoBLE.h>
+  #include "Wire.h"
+
   #define n_samples 15 // number of angle measurements before average velocity is updated
+  #define TCAADDR 0x70
+  #define encoder_left 1
+  #define encoder_right 0
 
   const float pi = 3.14159;
+  const float wheel_radius = 0.037;
   const float k = 0.993;
   const int pwm_deadzone = 46;
   float standing_angle = 0;
-  const float gyro_bias = 0.0807;
+  const float gyro_bias = 0.0961;
   float integral_constraint = 0.5;
   bool reference_angle_computed = false;
   bool new_gyro_angle = false;
   float encoder_velocity;
-  float encoder_velocities[n_samples];
+  float encoder_velocities_left[n_samples];
+  float encoder_velocities_right[n_samples];
   float average_velocity;
   float desired_velocity = 0;
   float tau = 0.5; //time constant to correct velocity error
@@ -40,6 +47,9 @@
   int A2_MD = 4;   
   int B1_MD = 2;   
   int B2_MD = 3;
+  // Initialize reset pin
+  int tca_reset = 6;
+  
   int duty_cycle = 0;
   int angle_count = 0;
 
@@ -52,7 +62,10 @@
   int dutycycle_drive;
   static String input_str = "";
   char input_char = ' ';
-  AS5600 as5600; 
+
+  //right and left motor encoders
+  AS5600 as5600_left;
+  AS5600 as5600_right; 
   
 
   void setup() {
@@ -65,6 +78,13 @@
     if (!IMU.begin()) {     // Check if IMU module has initialized
       while (1);
     }
+
+    // Reset I2C multiplexer
+    pinMode(tca_reset, OUTPUT);
+    digitalWrite(tca_reset, LOW);
+    delay(25);
+    digitalWrite(tca_reset,HIGH);
+
     Wire.begin();
     
     Serial.begin(115200);
@@ -91,9 +111,10 @@
     if(new_gyro_angle){
       theta_k = k*(theta_k_prev+(-gx)*elapsed_time) + (1-k)*theta_a;
 
-      //measure current wheel speed
+      //measure current wheel speed in rad/s
       measure_velocity();
-      //
+
+      //update velocity controller every few samples
       if(angle_count == n_samples){
         calculate_average_velocity();
         desired_acceleration = (desired_velocity-encoder_velocity)/tau;
@@ -397,17 +418,33 @@
     }
   }
 
-  //needs updating
-  void measure_velocity(){
-    encoder_velocities[angle_count] = 0.0; 
-  }
-
   void calculate_average_velocity(){
     float sum = 0.0;
 
     for(int i = 0; i < n_samples; i++){
-      sum += encoder_velocities[i];
+      sum += encoder_velocities_left[i];
+      sum += encoder_velocities_right[i];
     }
 
-    average_velocity = sum/n_samples;
+    average_velocity = sum/(2*n_samples);
   }
+  // Select channel on multiplexer
+void tcaselect(uint8_t i) {
+  if (i > 7) return;
+ 
+  Wire.beginTransmission(TCAADDR);
+  Wire.write(1 << i);
+  Wire.endTransmission();  
+}
+
+void measure_velocity(){
+  //measure current wheel speeds in rad/s
+  tcaselect(encoder_left);
+  encoder_velocities_left[angle_count] = as5600_left.getAngularSpeed(AS5600_MODE_RADIANS);
+  tcaselect(encoder_right);
+  encoder_velocities_right[angle_count] = as5600_right.getAngularSpeed(AS5600_MODE_RADIANS);
+
+  //convert rad/s to m/s
+  encoder_velocities_left[angle_count] *= wheel_radius;
+  encoder_velocities_right[angle_count] *= wheel_radius;
+}
