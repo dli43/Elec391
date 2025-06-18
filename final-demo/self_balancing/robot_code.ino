@@ -4,28 +4,28 @@
   #include <ArduinoBLE.h>
   #include "Wire.h"
 
-  #define n_samples 15 // number of angle measurements before average velocity is updated
+  #define n_samples 20 // number of angle measurements in moving average
   #define TCAADDR 0x70
   #define encoder_left 1
   #define encoder_right 0
 
   const float pi = 3.14159;
-  const float wheel_radius = 0.037;
+  const float wheel_radius = 0.04;
   const float k = 0.993;
   const int pwm_deadzone = 46;
-  float standing_angle = 0;
+  float standing_angle = -1.05;
   const float gyro_bias = 0.0961;
-  float integral_constraint = 0.5;
+  float integral_constraint = 14;
   bool reference_angle_computed = false;
   bool new_gyro_angle = false;
-  float encoder_velocity;
   float encoder_velocities_left[n_samples];
   float encoder_velocities_right[n_samples];
-  float average_velocity;
+  float average_velocity = 0;
   float desired_velocity = 0;
   float tau = 0.5; //time constant to correct velocity error
   float desired_acceleration = 0;
   float desired_angle = 0;
+  float max_desired_angle = 3;
 
   const char* BLE_name = "TEAM1-BLE-ROBOT";
   const char* service_UUID = "00000000-5EC4-4083-81CD-A10B8D5CF6EC";
@@ -53,9 +53,9 @@
   int duty_cycle = 0;
   int angle_count = 0;
 
-  float kp = 1.5;        // PID values
-  float ki = 30;
-  float kd = 0.28;
+  float kp = 3.2;        // PID values
+  float ki = 17;
+  float kd = 0.3;
   float pid_p;
   float pid_i = 0;
   float pid_d;
@@ -69,6 +69,7 @@
   
 
   void setup() {
+    Serial.begin(115200);
 
     pinMode(A1_MD, OUTPUT);     // Set the h-bridge driver pins as outputs
     pinMode(A2_MD, OUTPUT);
@@ -76,6 +77,7 @@
     pinMode(B2_MD, OUTPUT);
 
     if (!IMU.begin()) {     // Check if IMU module has initialized
+      Serial.println("IMU failed");
       while (1);
     }
 
@@ -86,42 +88,52 @@
     digitalWrite(tca_reset,HIGH);
 
     Wire.begin();
-    
-    Serial.begin(115200);
 
     pinMode(LED_BUILTIN, OUTPUT);
     initialize_BLE();
 
+
+    //populate encoder arrays with zeroes
+    for(int i = 0; i < n_samples; i++){
+      encoder_velocities_left[i] = 0;
+      encoder_velocities_right[i] = 0;
+    }
   }
 
   void loop() {
 
     if(IMU.accelerationAvailable()){
       read_accelerometer(); //update theta_a
+      //Serial.println("accel update");
     }
 
     if(IMU.gyroscopeAvailable()){
       IMU.readGyroscope(gx,gy,gz);            // Read angular velocity values into variables 
       gx -= gyro_bias;
       find_elapsed_time();
+      //Serial.println("gyro update");
       new_gyro_angle = true;
     }
 
     //once both sensors have measured something
     if(new_gyro_angle){
-      theta_k = k*(theta_k_prev+(-gx)*elapsed_time) + (1-k)*theta_a;
-
-      //measure current wheel speed in rad/s
-      measure_velocity();
-
-      //update velocity controller every few samples
+      //print info every few samples
       if(angle_count == n_samples){
-        calculate_average_velocity();
-        desired_acceleration = (desired_velocity-encoder_velocity)/tau;
-        desired_angle = atan(desired_acceleration/9.807);
+        print_info();
         angle_count = 0;
       }
 
+      theta_k = k*(theta_k_prev+(-gx)*elapsed_time) + (1-k)*theta_a;
+
+      //update moving average
+      update_average_velocity();
+
+      //calculate desired tilt
+      if(angle_count%5 == 0){ //n_samples must be above 10
+        desired_acceleration = (desired_velocity-average_velocity)/tau;
+        desired_angle = (180/pi)*atan(desired_acceleration/9.807);
+        desired_angle = constrain(desired_angle, -max_desired_angle, max_desired_angle);
+      }
       calculate_pwm();
       drive_wheels();
 
@@ -235,6 +247,13 @@
     Serial.print(pid_i);
     Serial.print(" | D: ");
     Serial.print(pid_d);
+    Serial.print("\n");
+    Serial.print("v_avg: ");
+    Serial.print(average_velocity);
+    Serial.print(" desired acceleration: ");
+    Serial.print(desired_acceleration);
+    Serial.print(" desired angle: ");
+    Serial.print(desired_angle);
     Serial.print("\n");
   }
 
@@ -418,33 +437,31 @@
     }
   }
 
-  void calculate_average_velocity(){
-    float sum = 0.0;
+  void update_average_velocity(){
+    //remove old measurements
+    average_velocity -= encoder_velocities_left[angle_count]/(2*n_samples);
+    average_velocity -= encoder_velocities_right[angle_count]/(2*n_samples);
 
-    for(int i = 0; i < n_samples; i++){
-      sum += encoder_velocities_left[i];
-      sum += encoder_velocities_right[i];
-    }
+    //measure new velocities
+    tcaselect(encoder_left);
+    encoder_velocities_left[angle_count] = as5600_left.getAngularSpeed(AS5600_MODE_RADIANS);
+    encoder_velocities_left[angle_count] *= -wheel_radius;
+    tcaselect(encoder_right);
+    encoder_velocities_right[angle_count] = as5600_right.getAngularSpeed(AS5600_MODE_RADIANS);
+    encoder_velocities_right[angle_count] *= -wheel_radius;
 
-    average_velocity = sum/(2*n_samples);
+    //god only knows why the fuck i have to multiply by a negative here
+
+    //add new values to average
+    average_velocity += encoder_velocities_left[angle_count]/(2*n_samples);
+    average_velocity += encoder_velocities_right[angle_count]/(2*n_samples);
   }
+
   // Select channel on multiplexer
-void tcaselect(uint8_t i) {
-  if (i > 7) return;
- 
-  Wire.beginTransmission(TCAADDR);
-  Wire.write(1 << i);
-  Wire.endTransmission();  
-}
-
-void measure_velocity(){
-  //measure current wheel speeds in rad/s
-  tcaselect(encoder_left);
-  encoder_velocities_left[angle_count] = as5600_left.getAngularSpeed(AS5600_MODE_RADIANS);
-  tcaselect(encoder_right);
-  encoder_velocities_right[angle_count] = as5600_right.getAngularSpeed(AS5600_MODE_RADIANS);
-
-  //convert rad/s to m/s
-  encoder_velocities_left[angle_count] *= wheel_radius;
-  encoder_velocities_right[angle_count] *= wheel_radius;
-}
+  void tcaselect(uint8_t i) {
+    if (i > 7) return;
+  
+    Wire.beginTransmission(TCAADDR);
+    Wire.write(1 << i);
+    Wire.endTransmission();  
+  }
