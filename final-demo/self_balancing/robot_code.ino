@@ -146,6 +146,10 @@
       calculate_pwm();
       drive_wheels();
 
+      if(print_count % print_interval == 0){
+        print_info();
+      }
+
       print_count = (print_count + 1) % print_interval;
       velocity_count = (velocity_count + 1) % velocity_interval;
       vel_buf_tracker = (vel_buf_tracker + 1) % vel_buf_samples;
