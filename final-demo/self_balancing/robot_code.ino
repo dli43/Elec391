@@ -23,7 +23,7 @@
   bool compute_complementary_angle = false;
   float encoder_velocities_left[vel_buf_samples];
   float encoder_velocities_right[vel_buf_samples];
-  float encoder_velocities_average[vel_buf_samples]
+  float encoder_velocities_average[vel_buf_samples];
   float average_velocity = 0;
   float desired_velocity = 0;
   float tau = 0.5; //time constant to correct velocity error
@@ -490,25 +490,25 @@
     encoder_velocities_average[vel_buf_tracker] = (encoder_velocities_left[angle_count] + encoder_velocities_right[angle_count])/2;
   }
 
-  float get_filtered_value(const float* signal, const float* kernel, int length, int index_pnt){
+  float get_filtered_value(float* signal, float* kernel, int length, int index_pnt){
     float filtered_val = 0.0;
 
     for(int i = 0; i < length; i++){
-      filtered_val += kernel_test[i]*signal_test[(length + (index_pnt - i)) % length];
+      filtered_val += kernel[i]*signal[(length + (index_pnt - i)) % length];
     }
 
     return filtered_val;
   }
 
-  void initialize_kernel(const float* kernel, int length){
+  void initialize_kernel(float* kernel, int length){
     float sum = 0.0;
 
     for(int i = 0; i < length; i++){
-      kernel_test[i] = exp(-4*i/(float)(length-1));
-      sum += kernel_test[i];
+      kernel[i] = exp(-4*i/(float)(length-1));
+      sum += kernel[i];
     }
 
     for(int i = 0; i < length; i++){
-    kernel_test[i] /= sum;
+    kernel[i] /= sum;
     }
   }
