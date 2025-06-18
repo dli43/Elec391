@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "chat gpt code": "cpp"
+        "chat gpt code": "cpp",
+        "ostream": "cpp"
     }
 }

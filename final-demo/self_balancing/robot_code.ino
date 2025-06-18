@@ -4,10 +4,13 @@
   #include <ArduinoBLE.h>
   #include "Wire.h"
 
-  #define n_samples 20 // number of angle measurements in moving average
   #define TCAADDR 0x70
   #define encoder_left 1
   #define encoder_right 0
+  #define vel_buf_samples 20 // number of velocity measurements in sensor buffer
+
+  #define print_interval 20
+  #define velocity_interval 5
 
   const float pi = 3.14159;
   const float wheel_radius = 0.04;
@@ -17,9 +20,10 @@
   const float gyro_bias = 0.0961;
   float integral_constraint = 14;
   bool reference_angle_computed = false;
-  bool new_gyro_angle = false;
-  float encoder_velocities_left[n_samples];
-  float encoder_velocities_right[n_samples];
+  bool compute_complementary_angle = false;
+  float encoder_velocities_left[vel_buf_samples];
+  float encoder_velocities_right[vel_buf_samples];
+  float encoder_velocities_average[vel_buf_samples]
   float average_velocity = 0;
   float desired_velocity = 0;
   float tau = 0.5; //time constant to correct velocity error
@@ -51,7 +55,12 @@
   int tca_reset = 6;
   
   int duty_cycle = 0;
-  int angle_count = 0;
+  int print_count = 1;
+  int velocity_count = 1;
+  int angle_count = 1;
+  int vel_buf_tracker = 0;
+
+  float vel_avg_kernel[vel_buf_samples];
 
   float kp = 3.2;        // PID values
   float ki = 17;
@@ -69,7 +78,7 @@
   
 
   void setup() {
-    Serial.begin(115200);
+    Serial.begin(115200);       // Initialize serial communication
 
     pinMode(A1_MD, OUTPUT);     // Set the h-bridge driver pins as outputs
     pinMode(A2_MD, OUTPUT);
@@ -87,17 +96,20 @@
     delay(25);
     digitalWrite(tca_reset,HIGH);
 
-    Wire.begin();
+    Wire.begin();       // Initialize I2C
 
     pinMode(LED_BUILTIN, OUTPUT);
     initialize_BLE();
 
-
     //populate encoder arrays with zeroes
-    for(int i = 0; i < n_samples; i++){
+    for(int i = 0; i < vel_buf_samples; i++){
       encoder_velocities_left[i] = 0;
       encoder_velocities_right[i] = 0;
     }
+
+    // Initialize filter kernels
+    initialize_kernel(vel_avg_kernel, vel_buf_samples);
+    
   }
 
   void loop() {
@@ -112,24 +124,21 @@
       gx -= gyro_bias;
       find_elapsed_time();
       //Serial.println("gyro update");
-      new_gyro_angle = true;
+      compute_complementary_angle = true;
     }
 
-    //once both sensors have measured something
-    if(new_gyro_angle){
-      //print info every few samples
-      if(angle_count == n_samples){
-        print_info();
-        angle_count = 0;
-      }
+    //once gyro angle has been updated the complementary angle can be computed
+    if(compute_complementary_angle){
 
+      //Update complementary tilt angle
       theta_k = k*(theta_k_prev+(-gx)*elapsed_time) + (1-k)*theta_a;
 
-      //update moving average
-      update_average_velocity();
+      //update sensor buffers with most recent measurements
+      update_sensor_buffers();
 
       //calculate desired tilt
-      if(angle_count%5 == 0){ //n_samples must be above 10
+      if(velocity_count % velocity_interval == 0){ // Error velocity and tilt control angle adjusted every velocity_interval samples
+        average_velocity = get_filtered_value(encoder_velocities_average, vel_avg_kernel, vel_buf_samples, vel_buf_tracker);
         desired_acceleration = (desired_velocity-average_velocity)/tau;
         desired_angle = (180/pi)*atan(desired_acceleration/9.807);
         desired_angle = constrain(desired_angle, -max_desired_angle, max_desired_angle);
@@ -137,8 +146,13 @@
       calculate_pwm();
       drive_wheels();
 
-      angle_count += 1;
-      new_gyro_angle = false;
+      print_count = (print_count + 1) % print_interval;
+      velocity_count = (velocity_count + 1) % velocity_interval;
+      vel_buf_tracker = (vel_buf_tracker + 1) % vel_buf_samples;
+      compute_complementary_angle = false;
+
+      //set previous theta_k value for next loop
+      theta_k_prev = theta_k;
     }
 
     //read input data 1 char at a time
@@ -159,8 +173,6 @@
     //run BLE logic
     runBLE();
 
-    //set previous theta_k value for next loop
-    theta_k_prev = theta_k;
   }
 
   //reads accelerometer values and stores angle in theta_a
@@ -439,8 +451,8 @@
 
   void update_average_velocity(){
     //remove old measurements
-    average_velocity -= encoder_velocities_left[angle_count]/(2*n_samples);
-    average_velocity -= encoder_velocities_right[angle_count]/(2*n_samples);
+    average_velocity -= encoder_velocities_left[angle_count]/(2*vel_buf_samples);
+    average_velocity -= encoder_velocities_right[angle_count]/(2*vel_buf_samples);
 
     //measure new velocities
     tcaselect(encoder_left);
@@ -453,8 +465,8 @@
     //god only knows why the fuck i have to multiply by a negative here
 
     //add new values to average
-    average_velocity += encoder_velocities_left[angle_count]/(2*n_samples);
-    average_velocity += encoder_velocities_right[angle_count]/(2*n_samples);
+    average_velocity += encoder_velocities_left[angle_count]/(2*vel_buf_samples);
+    average_velocity += encoder_velocities_right[angle_count]/(2*vel_buf_samples);
   }
 
   // Select channel on multiplexer
@@ -464,4 +476,35 @@
     Wire.beginTransmission(TCAADDR);
     Wire.write(1 << i);
     Wire.endTransmission();  
+  }
+
+  void update_sensor_buffers(){
+    encoder_velocities_left[vel_buf_tracker] = as5600_left.getAngularSpeed(AS5600_MODE_RADIANS);
+    encoder_velocities_left[angle_count] *= -wheel_radius;
+    encoder_velocities_right[vel_buf_tracker] = as5600_right.getAngularSpeed(AS5600_MODE_RADIANS);
+    encoder_velocities_right[angle_count] *= -wheel_radius;
+    encoder_velocities_average[vel_buf_tracker] = (encoder_velocities_left[angle_count] + encoder_velocities_right[angle_count])/2;
+  }
+
+  float get_filtered_value(const float* signal, const float* kernel, int length, int index_pnt){
+    float filtered_val = 0.0;
+
+    for(int i = 0; i < length; i++){
+      filtered_val += kernel_test[i]*signal_test[(length + (index_pnt - i)) % length];
+    }
+
+    return filtered_val;
+  }
+
+  void initialize_kernel(const float* kernel, int length){
+    float sum = 0.0;
+
+    for(int i = 0; i < length; i++){
+      kernel_test[i] = exp(-4*i/(float)(length-1));
+      sum += kernel_test[i];
+    }
+
+    for(int i = 0; i < length; i++){
+    kernel_test[i] /= sum;
+    }
   }
