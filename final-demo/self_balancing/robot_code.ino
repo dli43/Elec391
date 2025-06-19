@@ -18,7 +18,7 @@
   const float k = 0.993;
   const float kphi = 0.202;   // Motor constant
   const int pwm_deadzone = 46;
-  float standing_angle = -1.05;
+  float standing_angle = -0.5;
   const float gyro_bias = 0.0961;
   float integral_constraint = 14;
   bool reference_angle_computed = false;
@@ -231,12 +231,12 @@
     float pid_right;
 
     if(vel_left - vel_right > 0){
-      pid_left = pid - kphi*offset_velocity;
-      pid_right = pid + kphi*offset_velocity;
+      pid_left = pid - kphi/wheel_radius*offset_velocity;
+      pid_right = pid + kphi/wheel_radius*offset_velocity;
     }
     else if(vel_right - vel_left > 0){
-      pid_left = pid + kphi*offset_velocity;
-      pid_right = pid - kphi*offset_velocity;
+      pid_left = pid + kphi/wheel_radius*offset_velocity;
+      pid_right = pid - kphi/wheel_radius*offset_velocity;
     }
     else{
       pid_left = pid;
