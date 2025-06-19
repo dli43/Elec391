@@ -14,6 +14,13 @@
   #define position_interval 20
   #define velocity_interval 5
 
+  // BLE states
+  #define IDLE 0 
+  #define DRIVE_FORWARD 1
+  #define DRIVE_BACKWARD 2
+  #define TURN_LEFT 3
+  #define TURN_RIGHT 4
+
   // Constants and flags
   const float pi = 3.14159;
   const float wheel_radius = 0.04;
@@ -74,6 +81,7 @@
   const int BUFFER_SIZE = 20;
   BLEService customService(service_UUID);
   BLECharacteristic customCharacteristic(characteristic_UUID, BLERead | BLEWrite | BLENotify, BUFFER_SIZE, false);
+  int ble_state = 0;
 
   // IMU sensor
   float ax,ay,az;
@@ -177,8 +185,7 @@
       if(position_count % position_interval == 0){
         position_left = get_filtered_value(encoder_position_left, pos_kernel, pos_buf_samples, pos_buf_tracker);
         position_right = get_filtered_value(encoder_position_right, pos_kernel, pos_buf_samples, pos_buf_tracker);
-        correct_position_left = desired_position_left - position_left;
-        correct_position_right = desired_position_right - position_right;
+        set_ble_state();
         desired_left_velocity = correct_position_left/pos_tau;
         desired_right_velocity = correct_position_right/pos_tau;
       }
@@ -353,6 +360,8 @@
     Serial.println(position_left);
     Serial.print("right pos: ");
     Serial.println(position_right);
+    Serial.print("BLE State: ");
+    Serial.println(ble_state);
   }
 
   void update_pid(){
@@ -514,19 +523,25 @@
   }
 
   void parse_BLE_string(String BLE_string){
-    // BLE_string.toLowerCase();
+    BLE_string.toLowerCase();
 
-    // if(BLE_string.indexOf("forward") != -1){
-    //   desired_velocity = drive_speed;
-    // }
-    // else if(BLE_string.indexOf("backward") != -1){
-    //   desired_velocity = -drive_speed;
-    // }
-    // else if(BLE_string.indexOf("stop") != -1){
-    //   desired_velocity = 0;
-    //   as5600_left.resetCumulativePosition(encoder_ticks_left);
-    //   as5600_right.resetCumulativePosition(encoder_ticks_righht);
-    // }
+    if(BLE_string.indexOf("forward") != -1){
+      ble_state = DRIVE_FORWARD;
+    }
+    else if(BLE_string.indexOf("backward") != -1){
+      ble_state = DRIVE_BACKWARD;
+    }
+    else if(BLE_string.indexOf("left") != -1){
+      ble_state = TURN_LEFT;
+    }
+    else if(BLE_string.indexOf("right") != -1){
+      ble_state = TURN_RIGHT;
+    }
+    else if(BLE_string.indexOf("stop") != -1){
+      desired_position_left = position_left;
+      desired_position_right = position_right;
+      ble_state = IDLE;
+    }
   }
 
   // Select channel on multiplexer
@@ -606,4 +621,28 @@
       encoder_position_left[i] = 0;
       encoder_position_right[i] = 0;
     }
+  }
+
+  void set_ble_state(){
+    if(ble_state == IDLE){
+      correct_position_left = desired_position_left - position_left;
+      correct_position_right = desired_position_right - position_right;
+    }
+    else if(ble_state == DRIVE_FORWARD){
+      correct_position_left = 0.6;
+      correct_position_right = 0.6;
+    }
+    else if(ble_state == DRIVE_BACKWARD){
+      correct_position_left = -0.6;
+      correct_position_right = -0.6;
+    }
+    else if(ble_state == TURN_LEFT){
+      correct_position_left = 0.2;
+      correct_position_right = 0.6;
+    }
+    else if(ble_state == TURN_RIGHT){
+      correct_position_left = 0.6;
+      correct_position_right = 0.2;
+    }
+
   }
