@@ -27,7 +27,7 @@
   const float k = 0.993;
   const float kphi = 0.202;   // Motor constant
   const int pwm_deadzone = 46;
-  float standing_angle = -0.5;
+  float standing_angle = 5;
   const float gyro_bias = 0.0961;
   float integral_constraint = 14;
   bool reference_angle_computed = false;
@@ -48,11 +48,12 @@
   float offset_wheel_velocity = 0;
   float max_correct_velocity = 0.5;
 
-  float tau_velocity = 0.7; //time constant to correct velocity error
+  float tau_velocity = 0.5; //time constant to correct velocity error
   float desired_acceleration = 0;
   float desired_angle = 0;
   float max_desired_angle = 25;
-  float drive_speed = 0.3; //speed to drive robot at when given move commands
+  float drive_speed = 1; //speed to drive robot at when given move commands
+  float drive_speed_reverse = 0.1;
   float reference_position = 0; // refrence where the robot starts
 
   // Position controller
@@ -68,8 +69,8 @@
   float measured_right_position = 0;
   float correct_left_position = 0;
   float correct_right_position = 0;
-  float tau_position = 1.7;
-  float k_turn = 10;
+  float tau_position = 0.3;
+  float k_turn = 15;
   int max_differential_correction = 5;
 
   // Bluetooth
@@ -555,6 +556,12 @@
       desired_right_position = measured_right_position;
       ble_state = IDLE;
     }
+    else if(BLE_string.indexOf("-tilt") != -1){
+      standing_angle -= 5;
+    }
+    else if(BLE_string.indexOf("+tilt") != =1){
+      standing_angle += 5;
+    }
   }
 
   // Select channel on multiplexer
@@ -645,8 +652,8 @@
       desired_right_position = drive_speed*tau_position + measured_right_position;
     }
     else if(ble_state == DRIVE_BACKWARD){
-      desired_left_position = -drive_speed*tau_position + measured_left_position;
-      desired_right_position = -drive_speed*tau_position + measured_right_position;
+      desired_left_position = -drive_speed_reverse*tau_position + measured_left_position;
+      desired_right_position = -drive_speed_reverse*tau_position + measured_right_position;
     }
     else if(ble_state == TURN_LEFT){
       desired_left_position -= 0.06;

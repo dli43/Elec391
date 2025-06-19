@@ -252,8 +252,8 @@ class _MyHomePageState extends State<MyHomePage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     ElevatedButton(
-                      onPressed: _isConnected ? () => _sendCommand('A') : null,
-                      child: const Text('Send A'),
+                      onPressed: _isConnected ? () => _sendCommand('-TILT') : null,
+                      child: const Text('Less Tilt'),
                     ),
                     const SizedBox(width: 10),
                     ElevatedButton(
@@ -262,8 +262,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                     const SizedBox(width: 10),
                     ElevatedButton(
-                      onPressed: _isConnected ? () => _sendCommand('A') : null,
-                      child: const Text('Send A'),
+                      onPressed: _isConnected ? () => _sendCommand('+TILT') : null,
+                      child: const Text('More Tilt'),
                     ),
                   ],
                 ),
