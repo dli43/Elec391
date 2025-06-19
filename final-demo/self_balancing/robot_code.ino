@@ -48,10 +48,10 @@
   float offset_wheel_velocity = 0;
   float max_correct_velocity = 0.5;
 
-  float tau_velocity = 0.7; //time constant to correct velocity error
+  float tau_velocity = 0.5; //time constant to correct velocity error
   float desired_acceleration = 0;
   float desired_angle = 0;
-  float max_desired_angle = 25;
+  float max_desired_angle = 2;
   float drive_speed = 0.3; //speed to drive robot at when given move commands
   float reference_position = 0; // refrence where the robot starts
 
@@ -68,7 +68,7 @@
   float measured_right_position = 0;
   float correct_left_position = 0;
   float correct_right_position = 0;
-  float tau_position = 1.7;
+  float tau_position = 0.5;
   float k_turn = 10;
   int max_differential_correction = 5;
 
@@ -105,7 +105,7 @@
   
   
   // Tilt Angle controller
-  float kp = 3.4;     // PID values
+  float kp = 3.2;     // PID values
   float ki = 17;
   float kd = 0.3;
   float pid_p = 0;
@@ -190,8 +190,8 @@
         set_ble_state();
         correct_left_position = desired_left_position - measured_left_position;
         correct_right_position = desired_right_position - measured_right_position;
-        desired_left_velocity = correct_left_position/tau_position;
-        desired_right_velocity = correct_right_position/tau_position;
+        //desired_left_velocity = correct_left_position/tau_position;
+        //desired_right_velocity = correct_right_position/tau_position;
       }
 
       //calculate desired velocity and tilt
@@ -641,20 +641,20 @@
 
     }
     else if(ble_state == DRIVE_FORWARD){
-      desired_left_position += 0.035;
-      desired_right_position += 0.035;
+      desired_left_position = drive_speed*tau_position + measured_left_position;
+      desired_right_position = drive_speed*tau_position + measured_right_position;
     }
     else if(ble_state == DRIVE_BACKWARD){
-      desired_left_position += -0.035;
-      desired_right_position += -0.035;
+      desired_left_position = drive_speed*tau_position + measured_left_position;
+      desired_right_position = drive_speed*tau_position + measured_right_position;
     }
     else if(ble_state == TURN_LEFT){
-      desired_left_position -= 0.06;
+      desired_left_position += 0.02;
       desired_right_position += 0.06;
     }
     else if(ble_state == TURN_RIGHT){
       desired_left_position += 0.06;
-      desired_right_position -= 0.06;
+      desired_right_position += 0.02;
     }
 
   }

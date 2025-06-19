@@ -641,12 +641,12 @@
 
     }
     else if(ble_state == DRIVE_FORWARD){
-      desired_left_position += 0.035;
-      desired_right_position += 0.035;
+      desired_left_position = drive_speed*tau_position + measured_left_position;
+      desired_right_position = drive_speed*tau_position + measured_right_position;
     }
     else if(ble_state == DRIVE_BACKWARD){
-      desired_left_position += -0.035;
-      desired_right_position += -0.035;
+      desired_left_position = drive_speed*tau_position + measured_left_position;
+      desired_right_position = drive_speed*tau_position + measured_right_position;
     }
     else if(ble_state == TURN_LEFT){
       desired_left_position -= 0.06;
