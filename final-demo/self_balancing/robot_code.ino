@@ -77,7 +77,7 @@
   float kd = 0.3;
   float pid_p = 0;
   float pid_i = 0;
-  float pid_d - 0;
+  float pid_d = 0;
   int duty_cycle_left = 0;
   int duty_cycle_right = 0;
   int dutycycle_drive_left = 0;
@@ -154,7 +154,7 @@
         vel_left = get_filtered_value(encoder_velocities_left, vel_avg_kernel, vel_buf_samples, vel_buf_tracker);
         vel_right = get_filtered_value(encoder_velocities_right, vel_avg_kernel, vel_buf_samples, vel_buf_tracker);
         average_velocity = (vel_left + vel_right)/2;
-        offset_velocity = abs(vel_left - vel_right)2;
+        offset_velocity = abs(vel_left - vel_right)/2;
         desired_acceleration = (desired_velocity-average_velocity)/tau;
         desired_angle = (180/pi)*atan(desired_acceleration/9.807);
         desired_angle = constrain(desired_angle, -max_desired_angle, max_desired_angle);
@@ -304,10 +304,6 @@
   void print_info(){
     Serial.print("Theta: ");
     Serial.print(theta_k);
-    Serial.print(" | dutycylcle_drive: ");
-    Serial.print(dutycycle_drive);
-    Serial.print(" | PID: ");
-    Serial.print(duty_cycle);
     Serial.print(" | P: ");
     Serial.print(pid_p); 
     Serial.print(" | I: ");
