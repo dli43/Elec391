@@ -7,11 +7,11 @@
   #define TCAADDR 0x70
   #define encoder_left 1
   #define encoder_right 0
-  #define vel_buf_samples 50 // number of velocity measurements in sensor buffer
+  #define vel_buf_samples 20 // number of velocity measurements in sensor buffer
   #define pos_buf_samples 4  // number of position measurements in sensor buffer
 
   #define print_interval 20
-  #define position_interval 20
+  #define position_interval 30
   #define velocity_interval 5
 
   // Constants and flags
@@ -39,11 +39,12 @@
   float correct_right_velocity = 0;
   float correct_robot_velocity = 0;
   float offset_wheel_velocity = 0;
+  float max_correct_velocity = 0.5;
 
   float vel_tau = 0.5; //time constant to correct velocity error
   float desired_acceleration = 0;
   float desired_angle = 0;
-  float max_desired_angle = 3;
+  float max_desired_angle = 2;
   float drive_speed = 0.3; //speed to drive robot at when given move commands
   float reference_position = 0; // refrence where the robot starts
 
@@ -60,7 +61,8 @@
   float position_right = 0;
   float correct_position_left = 0;
   float correct_position_right = 0;
-  float pos_tau = 1;
+  float pos_tau = 2;
+  float k_turn = 10;
 
   // Bluetooth
   const char* BLE_name = "TEAM1-BLE-ROBOT";
@@ -186,6 +188,7 @@
         correct_left_velocity = desired_left_velocity - vel_left;
         correct_right_velocity = desired_right_velocity - vel_right;
         correct_robot_velocity = (correct_left_velocity + correct_right_velocity)/2;
+        correct_robot_velocity = constrain(correct_robot_velocity, -max_correct_velocity, max_correct_velocity);
         offset_wheel_velocity = abs(correct_left_velocity - correct_right_velocity)/(2*wheel_radius);
         desired_acceleration = correct_robot_velocity/vel_tau;
         desired_angle = (180/pi)*atan(desired_acceleration/9.807);
@@ -277,6 +280,12 @@
       pid_right = pid;
     }
 
+    float position_mismatch = correct_position_left - correct_position_right; // meters
+    float diff_correction = k_turn * position_mismatch;
+
+    pid_left += diff_correction;
+    pid_right -= diff_correction;
+
     dutycycle_drive_left = round_float(pid_left);
     dutycycle_drive_right = round_float(pid_right);
 
@@ -317,7 +326,7 @@
     //no drive
     else{
       analogWrite(pin1, 0);
-      analogWrite(pin1, 0);
+      analogWrite(pin2, 0);
     }
   }
 
@@ -591,6 +600,6 @@
     }
     for(int i = 0; i < pos_buf_samples; i++){
       encoder_position_left[i] = 0;
-      encoder_position_left[i] = 0;
+      encoder_position_right[i] = 0;
     }
   }
