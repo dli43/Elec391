@@ -11,7 +11,7 @@
   #define pos_buf_samples 4  // number of position measurements in sensor buffer
 
   #define print_interval 20
-  #define position_interval 30
+  #define position_interval 20
   #define velocity_interval 5
 
   // Constants and flags
@@ -61,9 +61,9 @@
   float position_right = 0;
   float correct_position_left = 0;
   float correct_position_right = 0;
-  float pos_tau = 2;
-  float k_turn = 2000;
-  int max_differential_correction = 10;
+  float pos_tau = 2.5;
+  float k_turn = 10;
+  int max_differential_correction = 5;
 
   // Bluetooth
   const char* BLE_name = "TEAM1-BLE-ROBOT";
@@ -585,7 +585,9 @@
 
   //measures distance traveled by each wheel in encoder ticks
   void measure_wheel_ticks(){
+    tcaselect(encoder_left);
     encoder_ticks_left = as5600_left.getCumulativePosition();
+    tcaselect(encoder_right);
     encoder_ticks_right = as5600_right.getCumulativePosition();
   }
 
