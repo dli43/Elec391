@@ -62,7 +62,8 @@
   float correct_position_left = 0;
   float correct_position_right = 0;
   float pos_tau = 2;
-  float k_turn = 10;
+  float k_turn = 2000;
+  int max_differential_correction = 10;
 
   // Bluetooth
   const char* BLE_name = "TEAM1-BLE-ROBOT";
@@ -128,6 +129,7 @@
     reset_tca();    // Reset I2C multiplexer
     
     Wire.begin();       // Initialize I2C
+    delay(100);
 
     pinMode(LED_BUILTIN, OUTPUT);
     initialize_BLE();
@@ -281,7 +283,7 @@
     }
 
     float position_mismatch = correct_position_left - correct_position_right; // meters
-    float diff_correction = k_turn * position_mismatch;
+    float diff_correction = constrain(k_turn * position_mismatch, -max_differential_correction, max_differential_correction);
 
     pid_left += diff_correction;
     pid_right -= diff_correction;
