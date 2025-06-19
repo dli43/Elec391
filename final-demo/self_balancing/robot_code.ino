@@ -385,6 +385,7 @@
     int kdIndex = input_str.indexOf("kd");
     int saIndex = input_str.indexOf("sa");
     int icIndex = input_str.indexOf("ic");
+    int ptIndex = input_str.indexOf("pt");
 
     if(kpIndex != -1 && kpIndex < input_str.length()){
       update_value('p', kpIndex+3);
@@ -400,6 +401,9 @@
     }
     if(icIndex != -1 && icIndex < input_str.length()){
       update_value('c', icIndex+3);
+    }
+    if(ptIndex != -1 && ptIndex < input_str.length()){
+      update_value('t', ptIndex+3);
     }
     input_str = "";
 
@@ -452,6 +456,11 @@
       integral_constraint = val;
       Serial.print("integral constraint: "); 
       Serial.println(integral_constraint, 4);
+    }
+    else if(type == 't'){
+      pos_tau = val;
+      Serial.print("pos tau: "); 
+      Serial.println(pos_tau, 4);
     }
   }
 
