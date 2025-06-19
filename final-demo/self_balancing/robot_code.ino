@@ -9,10 +9,11 @@
   #define encoder_right 0
   #define vel_buf_samples 20 // number of velocity measurements in sensor buffer
   #define pos_buf_samples 4  // number of position measurements in sensor buffer
+  #define pos_correct_samples 3
 
   #define print_interval 20
-  #define position_interval 20
-  #define velocity_interval 5
+  #define position_interval 4
+  #define velocity_interval 12
 
   // BLE states
   #define IDLE 0 
@@ -66,8 +67,10 @@
   float desired_position_right = 0;
   float position_left = 0;
   float position_right = 0;
-  float correct_position_left = 0;
-  float correct_position_right = 0;
+  int pos_correct_tracker = 0;
+  float correct_position_left[pos_correct_samples];
+  float correct_position_right[pos_correct_samples];
+  float pos_correct_kernel[pos_correct_samples];
   float pos_tau = 4.5;
   float k_turn = 10;
   int max_differential_correction = 5;
@@ -186,12 +189,15 @@
         position_left = get_filtered_value(encoder_position_left, pos_kernel, pos_buf_samples, pos_buf_tracker);
         position_right = get_filtered_value(encoder_position_right, pos_kernel, pos_buf_samples, pos_buf_tracker);
         set_ble_state();
-        desired_left_velocity = correct_position_left/pos_tau;
-        desired_right_velocity = correct_position_right/pos_tau;
+        correct_position_left[pos_correct_tracker] = desired_position_left - position_left;
+        correct_position_right[pos_correct_tracker] = desired_position_right - position_right;
+        pos_correct_tracker = (pos_correct_tracker + 1) % pos_correct_samples;
       }
 
       //calculate desired velocity and tilt
       if(velocity_count % velocity_interval == 0){ // Error velocity and tilt control angle adjusted every velocity_interval samples
+        desired_left_velocity = get_filtered_value(correct_position_left,pos_correct_kernel,pos_correct_samples,pos_correct_tracker)/pos_tau;
+        desired_right_velocity = get_filtered_value(correct_position_right,pos_correct_kernel,pos_correct_samples,pos_correct_tracker)/pos_tau;
         vel_left = wheel_radius*get_filtered_value(encoder_velocities_left, vel_kernel, vel_buf_samples, vel_buf_tracker);
         vel_right = wheel_radius*get_filtered_value(encoder_velocities_right, vel_kernel, vel_buf_samples, vel_buf_tracker);
         correct_left_velocity = desired_left_velocity - vel_left;
@@ -356,12 +362,14 @@
     Serial.print(" desired angle: ");
     Serial.print(desired_angle);
     Serial.print("\n");
-    // Serial.print("left pos: ");
-    // Serial.println(position_left);
-    // Serial.print("right pos: ");
-    // Serial.println(position_right);
-    // Serial.print("BLE State: ");
-    // Serial.println(ble_state);
+    Serial.print("left pos: ");
+    Serial.println(position_left);
+    Serial.print("right pos: ");
+    Serial.println(position_right);
+    Serial.print("left vel: ");
+    Serial.println(vel_left);
+    Serial.print("right vel: ");
+    Serial.println(vel_right);
   }
 
   void update_pid(){
@@ -630,28 +638,32 @@
       encoder_position_left[i] = 0;
       encoder_position_right[i] = 0;
     }
+    for(int i = 0; i < pos_correct_samples; i++){
+      correct_position_left[i] = 0;
+      correct_position_right[i] = 0;
+    }
   }
 
   void set_ble_state(){
     if(ble_state == IDLE){
-      correct_position_left = desired_position_left - position_left;
-      correct_position_right = desired_position_right - position_right;
+      desired_position_left = 0;
+      desired_position_right = 0;
     }
     else if(ble_state == DRIVE_FORWARD){
-      correct_position_left = 0.6;
-      correct_position_right = 0.6;
+      desired_position_left += 0.6;
+      desired_position_right += 0.6;
     }
     else if(ble_state == DRIVE_BACKWARD){
-      correct_position_left = -0.6;
-      correct_position_right = -0.6;
+      desired_position_left = -0.6;
+      desired_position_right = -0.6;
     }
     else if(ble_state == TURN_LEFT){
-      correct_position_left = 0.2;
-      correct_position_right = 0.6;
+      desired_position_left = 0.2;
+      desired_position_right = 0.6;
     }
     else if(ble_state == TURN_RIGHT){
-      correct_position_left = 0.6;
-      correct_position_right = 0.2;
+      desired_position_left = 0.6;
+      desired_position_right = 0.2;
     }
 
   }
