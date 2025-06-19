@@ -7,13 +7,12 @@
   #define TCAADDR 0x70
   #define encoder_left 1
   #define encoder_right 0
-  #define vel_buf_samples 20 // number of velocity measurements in sensor buffer
-  #define pos_buf_samples 4  // number of position measurements in sensor buffer
-  #define pos_correct_samples 3
+  #define buf_samples_velocity 20 // number of velocity measurements in sensor buffer
+  #define buf_samples_position 4  // number of position measurements in sensor buffer
 
-  #define print_interval 20
-  #define position_interval 4
-  #define velocity_interval 12
+  #define interval_print 20
+  #define interval_position 4
+  #define interval_velocity 12
 
   // BLE states
   #define IDLE 0 
@@ -35,21 +34,21 @@
   bool compute_complementary_angle = false;
   
   // Velocity controller 
-  int vel_buf_tracker = 0;
-  float encoder_velocities_left[vel_buf_samples];
-  float encoder_velocities_right[vel_buf_samples];
-  float vel_kernel[vel_buf_samples];
+  int buf_tracker_velocity = 0;
+  float encoder_left_velocities[buf_samples_velocity];
+  float encoder_right_velocities[buf_samples_velocity];
+  float kernel_velocity[buf_samples_velocity];
   float desired_left_velocity = 0;
   float desired_right_velocity = 0;
-  float vel_left = 0;
-  float vel_right = 0;
+  float measured_left_velocity = 0;
+  float measured_right_velocity = 0;
   float correct_left_velocity = 0;
   float correct_right_velocity = 0;
   float correct_robot_velocity = 0;
   float offset_wheel_velocity = 0;
   float max_correct_velocity = 0.5;
 
-  float vel_tau = 0.5; //time constant to correct velocity error
+  float tau_velocity = 0.5; //time constant to correct velocity error
   float desired_acceleration = 0;
   float desired_angle = 0;
   float max_desired_angle = 2;
@@ -57,21 +56,19 @@
   float reference_position = 0; // refrence where the robot starts
 
   // Position controller
-  int pos_buf_tracker = 0;
-  long encoder_ticks_left = 0;
-  long encoder_ticks_right = 0;
-  float encoder_position_left[pos_buf_samples];
-  float encoder_position_right[pos_buf_samples];
-  float pos_kernel[pos_buf_samples];
-  float desired_position_left = 0;
-  float desired_position_right = 0;
-  float position_left = 0;
-  float position_right = 0;
-  int pos_correct_tracker = 0;
-  float correct_position_left[pos_correct_samples];
-  float correct_position_right[pos_correct_samples];
-  float pos_correct_kernel[pos_correct_samples];
-  float pos_tau = 4.5;
+  int buf_tracker_position = 0;
+  long encoder_left_ticks = 0;
+  long encoder_right_ticks = 0;
+  float encoder_left_position[buf_samples_position];
+  float encoder_right_position[buf_samples_position];
+  float kernel_position[buf_samples_position];
+  float desired_left_position = 0;
+  float desired_right_position = 0;
+  float measured_left_position = 0;
+  float measured_right_position = 0;
+  float correct_left_position = 0;
+  float correct_right_position = 0;
+  float tau_position = 4.5;
   float k_turn = 10;
   int max_differential_correction = 5;
 
@@ -105,7 +102,6 @@
   int print_count = 1;
   int position_count = 1;
   int velocity_count = 1;
-  int angle_count = 1;
   
   
   // Tilt Angle controller
@@ -149,10 +145,13 @@
     initialize_buffers();
 
     // Initialize filter kernels
-    initialize_kernel(vel_kernel, vel_buf_samples);
-    initialize_kernel(pos_kernel, pos_buf_samples);
+    initialize_kernel(kernel_velocity, buf_samples_velocity);
+    initialize_kernel(kernel_position, buf_samples_position);
 
+    // Initialize encoder position
+    tcaselect(encoder_left);
     as5600_left.setZPosition(0);
+    tcaselect(encoder_right);
     as5600_right.setZPosition(0);
     
   }
@@ -185,27 +184,24 @@
       calculate_wheel_positions(); //update position buffers with current position in meters
 
       //calculate desired position
-      if(position_count % position_interval == 0){
-        position_left = get_filtered_value(encoder_position_left, pos_kernel, pos_buf_samples, pos_buf_tracker);
-        position_right = get_filtered_value(encoder_position_right, pos_kernel, pos_buf_samples, pos_buf_tracker);
+      if(position_count % interval_position == 0){
+        measured_left_position = get_filtered_value(encoder_left_position, kernel_position, buf_samples_position, buf_tracker_position);
+        measured_right_position = get_filtered_value(encoder_right_position, kernel_position, buf_samples_position, buf_tracker_position);
         set_ble_state();
-        correct_position_left[pos_correct_tracker] = desired_position_left - position_left;
-        correct_position_right[pos_correct_tracker] = desired_position_right - position_right;
-        pos_correct_tracker = (pos_correct_tracker + 1) % pos_correct_samples;
+        correct_left_position = desired_left_position - measured_left_position;
+        correct_right_position = desired_right_position - measured_right_position;
       }
 
       //calculate desired velocity and tilt
-      if(velocity_count % velocity_interval == 0){ // Error velocity and tilt control angle adjusted every velocity_interval samples
-        desired_left_velocity = get_filtered_value(correct_position_left,pos_correct_kernel,pos_correct_samples,pos_correct_tracker)/pos_tau;
-        desired_right_velocity = get_filtered_value(correct_position_right,pos_correct_kernel,pos_correct_samples,pos_correct_tracker)/pos_tau;
-        vel_left = wheel_radius*get_filtered_value(encoder_velocities_left, vel_kernel, vel_buf_samples, vel_buf_tracker);
-        vel_right = wheel_radius*get_filtered_value(encoder_velocities_right, vel_kernel, vel_buf_samples, vel_buf_tracker);
-        correct_left_velocity = desired_left_velocity - vel_left;
-        correct_right_velocity = desired_right_velocity - vel_right;
+      if(velocity_count % interval_velocity == 0){ // Error velocity and tilt control angle adjusted every velocity_interval samples
+        measured_left_velocity = wheel_radius*get_filtered_value(encoder_left_velocities, kernel_velocity, buf_samples_velocity, buf_tracker_velocity);
+        measured_right_velocity = wheel_radius*get_filtered_value(encoder_right_velocities, kernel_velocity, buf_samples_velocity, buf_tracker_velocity);
+        correct_left_velocity = desired_left_velocity - measured_left_velocity;
+        correct_right_velocity = desired_right_velocity - measured_right_velocity;
         correct_robot_velocity = (correct_left_velocity + correct_right_velocity)/2;
         correct_robot_velocity = constrain(correct_robot_velocity, -max_correct_velocity, max_correct_velocity);
         offset_wheel_velocity = abs(correct_left_velocity - correct_right_velocity)/(2*wheel_radius);
-        desired_acceleration = correct_robot_velocity/vel_tau;
+        desired_acceleration = correct_robot_velocity/tau_velocity;
         desired_angle = (180/pi)*atan(desired_acceleration/9.807);
         desired_angle = constrain(desired_angle, -max_desired_angle, max_desired_angle);
       }
@@ -213,15 +209,15 @@
       calculate_pwm();
       drive_wheels();
 
-      if(print_count % print_interval == 0){
+      if(print_count % interval_print == 0){
         print_info();
       }
 
-      print_count = (print_count + 1) % print_interval;
-      position_count = (position_count + 1) % position_interval;
-      velocity_count = (velocity_count + 1) % velocity_interval;
-      pos_buf_tracker = (pos_buf_tracker + 1) % pos_buf_samples;
-      vel_buf_tracker = (vel_buf_tracker + 1) % vel_buf_samples;
+      print_count = (print_count + 1) % interval_print;
+      position_count = (position_count + 1) % interval_position;
+      velocity_count = (velocity_count + 1) % interval_velocity;
+      buf_tracker_position = (buf_tracker_position + 1) % buf_samples_position;
+      buf_tracker_velocity = (buf_tracker_velocity + 1) % buf_samples_velocity;
       compute_complementary_angle = false;
 
       //set previous theta_k value for next loop
@@ -295,7 +291,7 @@
       pid_right = pid;
     }
 
-    float position_mismatch = correct_position_left - correct_position_right; // meters
+    float position_mismatch = correct_left_position - correct_right_position; // meters
     float diff_correction = constrain(k_turn * position_mismatch, -max_differential_correction, max_differential_correction);
 
     pid_left += diff_correction;
@@ -362,14 +358,12 @@
     Serial.print(" desired angle: ");
     Serial.print(desired_angle);
     Serial.print("\n");
-    Serial.print("left pos: ");
-    Serial.println(position_left);
-    Serial.print("right pos: ");
-    Serial.println(position_right);
-    Serial.print("left vel: ");
-    Serial.println(vel_left);
-    Serial.print("right vel: ");
-    Serial.println(vel_right);
+    // Serial.print("left pos: ");
+    // Serial.println(position_left);
+    // Serial.print("right pos: ");
+    // Serial.println(position_right);
+    // Serial.print("BLE State: ");
+    // Serial.println(ble_state);
   }
 
   void update_pid(){
@@ -572,9 +566,9 @@
 
   void update_sensor_buffers(){
     tcaselect(encoder_left);
-    encoder_velocities_left[vel_buf_tracker] = as5600_left.getAngularSpeed(AS5600_MODE_RADIANS);
+    encoder_left_velocities[buf_tracker_velocity] = as5600_left.getAngularSpeed(AS5600_MODE_RADIANS);
     tcaselect(encoder_right);
-    encoder_velocities_right[vel_buf_tracker] = as5600_right.getAngularSpeed(AS5600_MODE_RADIANS);
+    encoder_right_velocities[buf_tracker_velocity] = as5600_right.getAngularSpeed(AS5600_MODE_RADIANS);
   }
 
 
@@ -618,52 +612,48 @@
   //measures distance traveled by each wheel in encoder ticks
   void measure_wheel_ticks(){
     tcaselect(encoder_left);
-    encoder_ticks_left = as5600_left.getCumulativePosition();
+    encoder_left_ticks = as5600_left.getCumulativePosition();
     tcaselect(encoder_right);
-    encoder_ticks_right = as5600_right.getCumulativePosition();
+    encoder_right_ticks = as5600_right.getCumulativePosition();
   }
 
   //converts the encoder tick variables to meters
   void calculate_wheel_positions(){
-    encoder_position_left[pos_buf_tracker] = encoder_ticks_left * (2*pi*wheel_radius)/4096;
-    encoder_position_right[pos_buf_tracker] = encoder_ticks_right * (2*pi*wheel_radius)/4096;
+    encoder_left_position[buf_tracker_position] = encoder_left_ticks * (2*pi*wheel_radius)/4096;
+    encoder_right_position[buf_tracker_position] = encoder_right_ticks * (2*pi*wheel_radius)/4096;
   }
 
   void initialize_buffers(){
-    for(int i = 0; i < vel_buf_samples; i++){
-      encoder_velocities_left[i] = 0;
-      encoder_velocities_right[i] = 0;
+    for(int i = 0; i < buf_samples_velocity; i++){
+      encoder_left_velocities[i] = 0;
+      encoder_right_velocities_[i] = 0;
     }
-    for(int i = 0; i < pos_buf_samples; i++){
-      encoder_position_left[i] = 0;
-      encoder_position_right[i] = 0;
-    }
-    for(int i = 0; i < pos_correct_samples; i++){
-      correct_position_left[i] = 0;
-      correct_position_right[i] = 0;
+    for(int i = 0; i < buf_samples_velocity; i++){
+      encoder_left_position[i] = 0;
+      encoder_right_position = 0;
     }
   }
 
   void set_ble_state(){
     if(ble_state == IDLE){
-      desired_position_left = 0;
-      desired_position_right = 0;
+      correct_left_position = desired_left_position - measured_left_position;
+      correct_right_position = desired_right_position - measured_right_position;
     }
     else if(ble_state == DRIVE_FORWARD){
-      desired_position_left += 0.6;
-      desired_position_right += 0.6;
+      correct_left_position = 0.6;
+      correct_right_position = 0.6;
     }
     else if(ble_state == DRIVE_BACKWARD){
-      desired_position_left = -0.6;
-      desired_position_right = -0.6;
+      correct_left_position = -0.6;
+      correct_right_position = -0.6;
     }
     else if(ble_state == TURN_LEFT){
-      desired_position_left = 0.2;
-      desired_position_right = 0.6;
+      correct_left_position = 0.2;
+      correct_right_position = 0.6;
     }
     else if(ble_state == TURN_RIGHT){
-      desired_position_left = 0.6;
-      desired_position_right = 0.2;
+      correct_left_position = 0.6;
+      correct_right_position = 0.2;
     }
 
   }
