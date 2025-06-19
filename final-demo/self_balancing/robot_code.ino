@@ -105,6 +105,7 @@
     for(int i = 0; i < vel_buf_samples; i++){
       encoder_velocities_left[i] = 0;
       encoder_velocities_right[i] = 0;
+      encoder_velocities_average[i] = 0;
     }
 
     // Initialize filter kernels
@@ -461,10 +462,10 @@
     //measure new velocities
     tcaselect(encoder_left);
     encoder_velocities_left[angle_count] = as5600_left.getAngularSpeed(AS5600_MODE_RADIANS);
-    encoder_velocities_left[angle_count] *= -wheel_radius;
+    encoder_velocities_left[angle_count] *= wheel_radius;
     tcaselect(encoder_right);
     encoder_velocities_right[angle_count] = as5600_right.getAngularSpeed(AS5600_MODE_RADIANS);
-    encoder_velocities_right[angle_count] *= -wheel_radius;
+    encoder_velocities_right[angle_count] *= wheel_radius;
 
     //god only knows why the fuck i have to multiply by a negative here
 
@@ -483,11 +484,13 @@
   }
 
   void update_sensor_buffers(){
+    tcaselect(encoder_left);
     encoder_velocities_left[vel_buf_tracker] = as5600_left.getAngularSpeed(AS5600_MODE_RADIANS);
-    encoder_velocities_left[angle_count] *= -wheel_radius;
+    encoder_velocities_left[vel_buf_tracker] *= wheel_radius;
+    tcaselect(encoder_right);
     encoder_velocities_right[vel_buf_tracker] = as5600_right.getAngularSpeed(AS5600_MODE_RADIANS);
-    encoder_velocities_right[angle_count] *= -wheel_radius;
-    encoder_velocities_average[vel_buf_tracker] = (encoder_velocities_left[angle_count] + encoder_velocities_right[angle_count])/2;
+    encoder_velocities_right[vel_buf_tracker] *= wheel_radius;
+    encoder_velocities_average[vel_buf_tracker] = (encoder_velocities_left[vel_buf_tracker] + encoder_velocities_right[vel_buf_tracker])/2;
   }
 
   float get_filtered_value(float* signal, float* kernel, int length, int index_pnt){
