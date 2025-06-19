@@ -7,7 +7,7 @@
   #define TCAADDR 0x70
   #define encoder_left 1
   #define encoder_right 0
-  #define buf_samples_velocity 20 // number of velocity measurements in sensor buffer
+  #define buf_samples_velocity 25 // number of velocity measurements in sensor buffer
   #define buf_samples_position 4  // number of position measurements in sensor buffer
 
   #define interval_print 20
@@ -68,7 +68,7 @@
   float measured_right_position = 0;
   float correct_left_position = 0;
   float correct_right_position = 0;
-  float tau_position = 4.5;
+  float tau_position = 0.5;
   float k_turn = 10;
   int max_differential_correction = 5;
 
@@ -190,6 +190,8 @@
         set_ble_state();
         correct_left_position = desired_left_position - measured_left_position;
         correct_right_position = desired_right_position - measured_right_position;
+        //desired_left_velocity = correct_left_position/tau_position;
+        //desired_right_velocity = correct_right_position/tau_position;
       }
 
       //calculate desired velocity and tilt
@@ -636,24 +638,23 @@
 
   void set_ble_state(){
     if(ble_state == IDLE){
-      correct_left_position = desired_left_position - measured_left_position;
-      correct_right_position = desired_right_position - measured_right_position;
+
     }
     else if(ble_state == DRIVE_FORWARD){
-      correct_left_position = 0.6;
-      correct_right_position = 0.6;
+      desired_left_position += 0.06;
+      desired_right_position += 0.06;
     }
     else if(ble_state == DRIVE_BACKWARD){
-      correct_left_position = -0.6;
-      correct_right_position = -0.6;
+      desired_left_position += -0.06;
+      desired_right_position += -0.06;
     }
     else if(ble_state == TURN_LEFT){
-      correct_left_position = 0.2;
-      correct_right_position = 0.6;
+      desired_left_position += 0.02;
+      desired_right_position += 0.06;
     }
     else if(ble_state == TURN_RIGHT){
-      correct_left_position = 0.6;
-      correct_right_position = 0.2;
+      desired_left_position += 0.06;
+      desired_right_position += 0.02;
     }
 
   }
