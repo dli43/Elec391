@@ -61,7 +61,7 @@
   long encoder_right_ticks = 0;
   float encoder_left_position[buf_samples_position];
   float encoder_right_position[buf_samples_position];
-  float kernel_position[pos_buf_samples];
+  float kernel_position[buf_samples_position];
   float desired_left_position = 0;
   float desired_right_position = 0;
   float measured_left_position = 0;
@@ -188,6 +188,8 @@
         measured_left_position = get_filtered_value(encoder_left_position, kernel_position, buf_samples_position, buf_tracker_position);
         measured_right_position = get_filtered_value(encoder_right_position, kernel_position, buf_samples_position, buf_tracker_position);
         set_ble_state();
+        correct_left_position = desired_left_position - measured_left_position;
+        correct_right_position = desired_right_position - measured_right_position;
       }
 
       //calculate desired velocity and tilt
@@ -458,9 +460,9 @@
       Serial.println(integral_constraint, 4);
     }
     else if(type == 't'){
-      pos_tau = val;
+      tau_position = val;
       Serial.print("pos tau: "); 
-      Serial.println(pos_tau, 4);
+      Serial.println(tau_position, 4);
     }
   }
 
@@ -547,8 +549,8 @@
       ble_state = TURN_RIGHT;
     }
     else if(BLE_string.indexOf("stop") != -1){
-      desired_position_left = position_left;
-      desired_position_right = position_right;
+      desired_left_position = measured_left_position;
+      desired_right_position = measured_right_position;
       ble_state = IDLE;
     }
   }
@@ -622,13 +624,13 @@
   }
 
   void initialize_buffers(){
-    for(int i = 0; i < vel_buf_samples; i++){
+    for(int i = 0; i < buf_samples_velocity; i++){
       encoder_left_velocities[i] = 0;
-      encoder_right_velocities_[i] = 0;
+      encoder_right_velocities[i] = 0;
     }
-    for(int i = 0; i < pos_buf_samples; i++){
+    for(int i = 0; i < buf_samples_velocity; i++){
       encoder_left_position[i] = 0;
-      encoder_right_position = 0;
+      encoder_right_position[i] = 0;
     }
   }
 
