@@ -68,7 +68,7 @@
   float position_right = 0;
   float correct_position_left = 0;
   float correct_position_right = 0;
-  float pos_tau = 2.5;
+  float pos_tau = 4.5;
   float k_turn = 10;
   int max_differential_correction = 5;
 
@@ -356,12 +356,12 @@
     Serial.print(" desired angle: ");
     Serial.print(desired_angle);
     Serial.print("\n");
-    Serial.print("left pos: ");
-    Serial.println(position_left);
-    Serial.print("right pos: ");
-    Serial.println(position_right);
-    Serial.print("BLE State: ");
-    Serial.println(ble_state);
+    // Serial.print("left pos: ");
+    // Serial.println(position_left);
+    // Serial.print("right pos: ");
+    // Serial.println(position_right);
+    // Serial.print("BLE State: ");
+    // Serial.println(ble_state);
   }
 
   void update_pid(){
