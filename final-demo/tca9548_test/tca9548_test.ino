@@ -54,7 +54,8 @@
   // Initialize reset pin
   int tca_reset = 6;
   
-  int duty_cycle = 0;
+  int duty_cycle_left = 0;
+  int duty_cycle_right = 0;
   int print_count = 1;
   int velocity_count = 1;
   int angle_count = 1;
@@ -68,7 +69,8 @@
   float pid_p;
   float pid_i = 0;
   float pid_d;
-  int dutycycle_drive;
+  int dutycycle_drive_left;
+  int dutycycle_drive_right;
   static String input_str = "";
   char input_char = ' ';
 
@@ -213,38 +215,51 @@
     float pid = pid_p+pid_i+pid_d;
 
     if(pid > 0){
-      dutycycle_drive = int(pid+0.5);
+      dutycycle_drive_left = int(pid+0.5);
+      dutycycle_drive_right = int(pid+0.5);
     }
     else if(pid < 0){
-      dutycycle_drive = int(pid-0.5);
+      dutycycle_drive_left = int(pid-0.5);
+      dutycycle_drive_right = int(pid-0.5);
     }
     else{
-      dutycycle_drive = 0;
+      dutycycle_drive_left = 0;
+      dutycycle_drive_right = 0;
     }
 
-    duty_cycle = min(abs(dutycycle_drive)+pwm_deadzone, 255);
+    duty_cycle_left = min(abs(dutycycle_drive_left)+pwm_deadzone, 255);
+    duty_cycle_right = min(abs(dutycycle_drive_right)+pwm_deadzone, 255);
   }
 
   void drive_wheels(){
 
     //drive forward
-    if(dutycycle_drive > 0){
-      analogWrite(A1_MD, duty_cycle);
+    if(dutycycle_drive_left > 0){
+      analogWrite(A1_MD, duty_cycle_left);
       analogWrite(A2_MD, 0);
-      analogWrite(B1_MD, duty_cycle);
-      analogWrite(B2_MD, 0);
     }
     //drive backward
-    else if(dutycycle_drive < 0){
+    else if(dutycycle_drive_left < 0){
       analogWrite(A1_MD, 0);
-      analogWrite(A2_MD, duty_cycle);
-      analogWrite(B1_MD, 0);
-      analogWrite(B2_MD, duty_cycle);
+      analogWrite(A2_MD, duty_cycle_left);
     }
     //no drive
     else{
       analogWrite(A1_MD, 0);
       analogWrite(A2_MD, 0);
+    }
+    
+    if(dutycycle_drive_right > 0){
+      analogWrite(B1_MD, duty_cycle_right);
+      analogWrite(B2_MD, 0);
+    }
+    //drive backward
+    else if(dutycycle_drive_right < 0){
+      analogWrite(B1_MD, 0);
+      analogWrite(B2_MD, duty_cycle_right);
+    }
+    //no drive
+    else{
       analogWrite(B1_MD, 0);
       analogWrite(B2_MD, 0);
     }
@@ -253,10 +268,14 @@
   void print_info(){
     Serial.print("Theta: ");
     Serial.print(theta_k);
-    Serial.print(" | dutycylcle_drive: ");
-    Serial.print(dutycycle_drive);
-    Serial.print(" | PID: ");
-    Serial.print(duty_cycle);
+    Serial.print(" | dutycylcle_drive left: ");
+    Serial.print(dutycycle_drive_left);
+    erial.print(" | dutycylcle_drive right: ");
+    Serial.print(dutycycle_drive_right);
+    Serial.print(" | PID left: ");
+    Serial.print(duty_cycle_left);
+    Serial.print(" | PID right: ");
+    Serial.print(duty_cycle_right);
     Serial.print(" | P: ");
     Serial.print(pid_p); 
     Serial.print(" | I: ");

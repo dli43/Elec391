@@ -7,30 +7,40 @@
   #define TCAADDR 0x70
   #define encoder_left 1
   #define encoder_right 0
-  #define vel_buf_samples 20 // number of velocity measurements in sensor buffer
+  #define vel_buf_samples 50 // number of velocity measurements in sensor buffer
 
   #define print_interval 20
   #define velocity_interval 5
 
+  // Constants and flags
   const float pi = 3.14159;
   const float wheel_radius = 0.04;
   const float k = 0.993;
+  const float kphi = 0.202;   // Motor constant
   const int pwm_deadzone = 46;
   float standing_angle = -1.05;
   const float gyro_bias = 0.0961;
   float integral_constraint = 14;
   bool reference_angle_computed = false;
   bool compute_complementary_angle = false;
+  
+  // Velocity controller 
   float encoder_velocities_left[vel_buf_samples];
   float encoder_velocities_right[vel_buf_samples];
-  float encoder_velocities_average[vel_buf_samples];
+  float vel_left = 0;
+  float vel_right = 0;
   float average_velocity = 0;
+  float offset_velocity = 0;
   float desired_velocity = 0;
+  int vel_buf_tracker = 0;
+  float vel_avg_kernel[vel_buf_samples];
+  
   float tau = 0.5; //time constant to correct velocity error
   float desired_acceleration = 0;
   float desired_angle = 0;
   float max_desired_angle = 3;
 
+  // Bluetooth
   const char* BLE_name = "TEAM1-BLE-ROBOT";
   const char* service_UUID = "00000000-5EC4-4083-81CD-A10B8D5CF6EC";
   const char* characteristic_UUID = "00000001-5EC4-4083-81CD-A10B8D5CF6EC";
@@ -40,6 +50,7 @@
   BLEService customService(service_UUID);
   BLECharacteristic customCharacteristic(characteristic_UUID, BLERead | BLEWrite | BLENotify, BUFFER_SIZE, false);
 
+  // IMU sensor
   float ax,ay,az;
   float gx,gy,gz;
   float theta_a, theta_g, theta_k, theta_k_prev;
@@ -47,28 +58,30 @@
   float elapsed_time;
   float integral = 0;
 
+  // GPIO pins
   int A1_MD = 5;       // Set the pin numbers for the h-bridge driver motor 
   int A2_MD = 4;   
   int B1_MD = 2;   
   int B2_MD = 3;
-  // Initialize reset pin
   int tca_reset = 6;
   
-  int duty_cycle = 0;
+  // Counters 
   int print_count = 1;
   int velocity_count = 1;
   int angle_count = 1;
-  int vel_buf_tracker = 0;
-
-  float vel_avg_kernel[vel_buf_samples];
-
+  
+  
+  // Tilt Angle controller
   float kp = 3.2;        // PID values
   float ki = 17;
   float kd = 0.3;
-  float pid_p;
+  float pid_p = 0;
   float pid_i = 0;
-  float pid_d;
-  int dutycycle_drive;
+  float pid_d - 0;
+  int duty_cycle_left = 0;
+  int duty_cycle_right = 0;
+  int dutycycle_drive_left = 0;
+  int dutycycle_drive_right = 0;
   static String input_str = "";
   char input_char = ' ';
 
@@ -105,7 +118,6 @@
     for(int i = 0; i < vel_buf_samples; i++){
       encoder_velocities_left[i] = 0;
       encoder_velocities_right[i] = 0;
-      encoder_velocities_average[i] = 0;
     }
 
     // Initialize filter kernels
@@ -139,7 +151,10 @@
 
       //calculate desired tilt
       if(velocity_count % velocity_interval == 0){ // Error velocity and tilt control angle adjusted every velocity_interval samples
-        average_velocity = get_filtered_value(encoder_velocities_average, vel_avg_kernel, vel_buf_samples, vel_buf_tracker);
+        vel_left = get_filtered_value(encoder_velocities_left, vel_avg_kernel, vel_buf_samples, vel_buf_tracker);
+        vel_right = get_filtered_value(encoder_velocities_right, vel_avg_kernel, vel_buf_samples, vel_buf_tracker);
+        average_velocity = (vel_left + vel_right)/2;
+        offset_velocity = abs(vel_left - vel_right)2;
         desired_acceleration = (desired_velocity-average_velocity)/tau;
         desired_angle = (180/pi)*atan(desired_acceleration/9.807);
         desired_angle = constrain(desired_angle, -max_desired_angle, max_desired_angle);
@@ -212,40 +227,75 @@
     pid_d = kd*(theta_k-theta_k_prev)/elapsed_time;
 
     float pid = pid_p+pid_i+pid_d;
+    float pid_left;
+    float pid_right;
 
-    if(pid > 0){
-      dutycycle_drive = int(pid+0.5);
+    if(vel_left - vel_right > 0){
+      pid_left = pid - kphi*offset_velocity;
+      pid_right = pid + kphi*offset_velocity;
     }
-    else if(pid < 0){
-      dutycycle_drive = int(pid-0.5);
+    else if(vel_right - vel_left > 0){
+      pid_left = pid + kphi*offset_velocity;
+      pid_right = pid - kphi*offset_velocity;
     }
     else{
-      dutycycle_drive = 0;
+      pid_left = pid;
+      pid_right = pid;
     }
 
-    duty_cycle = min(abs(dutycycle_drive)+pwm_deadzone, 255);
+    if(pid_left > 0){
+      dutycycle_drive_left = int(pid_left+0.5);
+    }
+    else if(pid_left < 0){
+      dutycycle_drive_left = int(pid_left-0.5);
+    }
+    else{
+      dutycycle_drive_left = 0;
+    }
+
+    if(pid_right > 0){
+      dutycycle_drive_right = int(pid_right+0.5);
+    }
+    else if(pid_right < 0){
+      dutycycle_drive_right = int(pid_right-0.5);
+    }
+    else{
+      dutycycle_drive_right = 0;
+    }
+
+    duty_cycle_left = min(abs(dutycycle_drive_left)+pwm_deadzone, 255);
+    duty_cycle_right = min(abs(dutycycle_drive_right)+pwm_deadzone, 255);
   }
 
   void drive_wheels(){
 
     //drive forward
-    if(dutycycle_drive > 0){
-      analogWrite(A1_MD, duty_cycle);
+    if(dutycycle_drive_left > 0){
+      analogWrite(A1_MD, duty_cycle_left);
       analogWrite(A2_MD, 0);
-      analogWrite(B1_MD, duty_cycle);
-      analogWrite(B2_MD, 0);
     }
     //drive backward
-    else if(dutycycle_drive < 0){
+    else if(dutycycle_drive_left < 0){
       analogWrite(A1_MD, 0);
-      analogWrite(A2_MD, duty_cycle);
-      analogWrite(B1_MD, 0);
-      analogWrite(B2_MD, duty_cycle);
+      analogWrite(A2_MD, duty_cycle_left);
     }
     //no drive
     else{
       analogWrite(A1_MD, 0);
       analogWrite(A2_MD, 0);
+    }
+    
+    if(dutycycle_drive_right > 0){
+      analogWrite(B1_MD, duty_cycle_right);
+      analogWrite(B2_MD, 0);
+    }
+    //drive backward
+    else if(dutycycle_drive_right < 0){
+      analogWrite(B1_MD, 0);
+      analogWrite(B2_MD, duty_cycle_right);
+    }
+    //no drive
+    else{
       analogWrite(B1_MD, 0);
       analogWrite(B2_MD, 0);
     }
@@ -485,13 +535,11 @@
 
   void update_sensor_buffers(){
     tcaselect(encoder_left);
-    encoder_velocities_left[vel_buf_tracker] = as5600_left.getAngularSpeed(AS5600_MODE_RADIANS);
-    encoder_velocities_left[vel_buf_tracker] *= wheel_radius;
+    encoder_velocities_left[vel_buf_tracker] = as5600_left.getAngularSpeed(AS5600_MODE_RADIANS)*wheel_radius;
     tcaselect(encoder_right);
-    encoder_velocities_right[vel_buf_tracker] = as5600_right.getAngularSpeed(AS5600_MODE_RADIANS);
-    encoder_velocities_right[vel_buf_tracker] *= wheel_radius;
-    encoder_velocities_average[vel_buf_tracker] = (encoder_velocities_left[vel_buf_tracker] + encoder_velocities_right[vel_buf_tracker])/2;
+    encoder_velocities_right[vel_buf_tracker] = as5600_right.getAngularSpeed(AS5600_MODE_RADIANS)*wheel_radius;
   }
+
 
   float get_filtered_value(float* signal, float* kernel, int length, int index_pnt){
     float filtered_val = 0.0;
@@ -512,6 +560,6 @@
     }
 
     for(int i = 0; i < length; i++){
-    kernel[i] /= sum;
+      kernel[i] /= sum;
     }
   }
